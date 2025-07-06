@@ -1,4 +1,7 @@
-import { currentUser } from '@clerk/nextjs/server'
+'use client'
+
+import React, { useState } from 'react'
+import { useUser } from '@clerk/nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -6,6 +9,7 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { NoProjectsState } from '@/components/design-system/empty-states'
 import { InlineLoading } from '@/components/design-system/loading-states'
+import { CreateProjectWizard } from '@/components/projects/CreateProjectWizard'
 import { 
   WritingIcon, 
   AIIcon, 
@@ -14,12 +18,12 @@ import {
 } from '@/components/design-system/icons'
 import Link from 'next/link'
 
-export default async function DashboardPage() {
-  const user = await currentUser()
+export default function DashboardPage() {
+  const { user } = useUser()
+  const [showCreateWizard, setShowCreateWizard] = useState(false)
 
   const handleCreateProject = () => {
-    // This would navigate to create project page
-    console.log('Create project clicked')
+    setShowCreateWizard(true)
   }
 
   return (
@@ -131,14 +135,15 @@ export default async function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Button asChild className="h-auto p-4 flex flex-col items-start">
-                  <Link href="/projects/new">
-                    <WritingIcon size={24} className="mb-2" />
-                    <span className="font-medium">New Project</span>
-                    <span className="text-xs text-muted-foreground mt-1">
-                      Start a fresh story
-                    </span>
-                  </Link>
+                <Button 
+                  onClick={handleCreateProject}
+                  className="h-auto p-4 flex flex-col items-start"
+                >
+                  <WritingIcon size={24} className="mb-2" />
+                  <span className="font-medium">New Project</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Start a fresh story
+                  </span>
                 </Button>
                 
                 <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
@@ -257,6 +262,12 @@ export default async function DashboardPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Create Project Wizard */}
+      <CreateProjectWizard
+        open={showCreateWizard}
+        onOpenChange={setShowCreateWizard}
+      />
     </div>
   )
 }

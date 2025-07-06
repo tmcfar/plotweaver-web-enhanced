@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ProjectGrid } from '@/components/projects/ProjectGrid'
 import { ProjectFilters } from '@/components/projects/ProjectFilters'
+import { CreateProjectWizard } from '@/components/projects/CreateProjectWizard'
 import { ErrorState } from '@/components/design-system/empty-states'
 import { useProjects } from '@/hooks/useProjects'
 import type { Project } from '@/types/project'
@@ -19,6 +20,7 @@ export default function ProjectsPage() {
   const [sortBy, setSortBy] = useState<'title' | 'updatedAt' | 'createdAt' | 'wordCount'>('updatedAt')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [showCreateWizard, setShowCreateWizard] = useState(false)
 
   // Filter and sort projects
   const filteredAndSortedProjects = useMemo(() => {
@@ -81,8 +83,7 @@ export default function ProjectsPage() {
   }, [projects, searchQuery, statusFilters, writingModeFilters, sortBy, sortOrder])
 
   const handleCreateProject = () => {
-    // This will be implemented when we create the project creation flow
-    console.log('Create project clicked')
+    setShowCreateWizard(true)
   }
 
   const handleEditProject = (project: Project) => {
@@ -144,6 +145,12 @@ export default function ProjectsPage() {
         isLoading={isLoading}
         onCreateProject={handleCreateProject}
         onEditProject={handleEditProject}
+      />
+
+      {/* Create Project Wizard */}
+      <CreateProjectWizard
+        open={showCreateWizard}
+        onOpenChange={setShowCreateWizard}
       />
     </div>
   )
