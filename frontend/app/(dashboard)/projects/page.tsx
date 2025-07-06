@@ -143,6 +143,7 @@ export default function ProjectsPage() {
       <ProjectGrid
         projects={filteredAndSortedProjects}
         isLoading={isLoading}
+        viewMode={viewMode}
         onCreateProject={handleCreateProject}
         onEditProject={handleEditProject}
       />

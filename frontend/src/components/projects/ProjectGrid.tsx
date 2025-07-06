@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { ProjectCard } from './ProjectCard'
+import { ProjectList } from './ProjectList'
 import { NoProjectsState } from '@/components/design-system/empty-states'
 import { SkeletonCard } from '@/components/design-system/loading-states'
 import { useDeleteProject, useDuplicateProject, useArchiveProject } from '@/hooks/useProjects'
@@ -10,6 +11,7 @@ import type { Project } from '@/types/project'
 interface ProjectGridProps {
   projects: Project[]
   isLoading: boolean
+  viewMode: 'grid' | 'list'
   onCreateProject: () => void
   onEditProject: (project: Project) => void
   className?: string
@@ -18,6 +20,7 @@ interface ProjectGridProps {
 export function ProjectGrid({ 
   projects, 
   isLoading, 
+  viewMode,
   onCreateProject, 
   onEditProject,
   className 
@@ -42,7 +45,13 @@ export function ProjectGrid({
   }
 
   if (isLoading) {
-    return (
+    return viewMode === 'list' ? (
+      <div className="space-y-4">
+        {Array.from({ length: 6 }, (_, i) => (
+          <SkeletonCard key={i} />
+        ))}
+      </div>
+    ) : (
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }, (_, i) => (
           <SkeletonCard key={i} />
@@ -54,6 +63,19 @@ export function ProjectGrid({
   if (projects.length === 0) {
     return (
       <NoProjectsState onCreateProject={onCreateProject} />
+    )
+  }
+
+  if (viewMode === 'list') {
+    return (
+      <ProjectList
+        projects={projects}
+        onEdit={onEditProject}
+        onDuplicate={handleDuplicate}
+        onArchive={handleArchive}
+        onDelete={handleDelete}
+        className={className}
+      />
     )
   }
 
