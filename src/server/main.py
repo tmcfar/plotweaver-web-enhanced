@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from typing import Any, Dict, List, Set, Optional
 import json
 import asyncio
+from .constants import MAX_CONNECTIONS, MAX_MESSAGE_SIZE, HEARTBEAT_TIMEOUT
 from fastapi import FastAPI, WebSocket, HTTPException, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -18,13 +19,27 @@ app.add_middleware(
 
 # Enhanced WebSocket Connection Manager
 class EnhancedConnectionManager:
+    async def _periodic_cleanup(self):
+        while True:
+            await asyncio.sleep(HEARTBEAT_TIMEOUT * 2)
+            now = datetime.now(UTC)
+            disconnected = []
+            for client_id, presence in self.user_presence.items():
+                if (now - presence['last_seen']).total_seconds() > HEARTBEAT_TIMEOUT * 2:
+                    disconnected.append(client_id)
+            for client_id in disconnected:
+                self.disconnect(client_id)
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
         self.project_subscribers: Dict[str, Set[str]] = {}
         self.user_presence: Dict[str, Dict[str, Any]] = {}
         self.heartbeat_intervals: Dict[str, asyncio.Task] = {}
+        self._cleanup_task = asyncio.create_task(self._periodic_cleanup())
         
     async def connect(self, websocket: WebSocket, client_id: str):
+        if len(self.active_connections) >= MAX_CONNECTIONS:
+            await websocket.close(code=1013, reason="Maximum connections reached")
+            return
         await websocket.accept()
         self.active_connections[client_id] = websocket
         
@@ -66,7 +81,7 @@ class EnhancedConnectionManager:
         """Send periodic heartbeat to keep connection alive"""
         try:
             while client_id in self.active_connections:
-                await asyncio.sleep(30)  # 30 second heartbeat
+                await asyncio.sleep(HEARTBEAT_TIMEOUT)
                 if client_id in self.active_connections:
                     await self.send_personal_message({
                         "channel": "heartbeat",
@@ -325,6 +340,9 @@ async def enhanced_websocket_endpoint(websocket: WebSocket) -> None:
     try:
         while True:
             data = await websocket.receive_text()
+            if len(data) > MAX_MESSAGE_SIZE:
+                await websocket.close(code=1009, reason="Message too large")
+                return
             
             try:
                 message = json.loads(data)
