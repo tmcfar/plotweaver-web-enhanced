@@ -1,0 +1,57 @@
+{
+  "issues": [],
+  "warnings": [
+    {
+      "file": "/home/tmcfar/dev/pw-web/src/auth/jwt_auth.py",
+      "line": 147,
+      "description": "Hardcoded secret (placeholder detected)"
+    },
+    {
+      "file": "/home/tmcfar/dev/pw-web/src/server/main.py",
+      "line": 117,
+      "description": "Error information may be disclosed"
+    },
+    {
+      "file": "/home/tmcfar/dev/pw-web/src/server/main.py",
+      "line": 143,
+      "description": "Error information may be disclosed"
+    }
+  ],
+  "passed_checks": [
+    {
+      "check": "SQL_INJECTION",
+      "description": "No SQL injection vulnerabilities detected"
+    },
+    {
+      "check": "JWT_AUTH",
+      "description": "JWT authentication implementation found"
+    },
+    {
+      "check": "RATE_LIMITING",
+      "description": "Rate limiting implementation found"
+    },
+    {
+      "check": "WS_AUTH",
+      "description": "WebSocket authentication implemented"
+    },
+    {
+      "check": "WS_RATE_LIMIT",
+      "description": "WebSocket rate limiting implemented"
+    },
+    {
+      "check": "WS_VALIDATION",
+      "description": "WebSocket message validation implemented"
+    },
+    {
+      "check": "INPUT_VALIDATION",
+      "description": "Input validation framework detected"
+    }
+  ],
+  "summary": {
+    "critical_issues": 0,
+    "high_issues": 0,
+    "medium_issues": 0,
+    "warnings": 3,
+    "passed_checks": 7
+  }
+}
