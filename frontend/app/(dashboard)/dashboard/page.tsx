@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { NoProjectsState } from '@/components/design-system/empty-states'
 import { InlineLoading } from '@/components/design-system/loading-states'
 import { CreateProjectWizard } from '@/components/projects/CreateProjectWizard'
+import { ProjectStats } from '@/components/projects/ProjectStats'
 import { 
   WritingIcon, 
   AIIcon, 
@@ -47,67 +48,7 @@ export default function DashboardPage() {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Stats Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Projects
-                </CardTitle>
-                <WritingIcon size={16} className="text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">
-                  Start your first story
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Words Today
-                </CardTitle>
-                <ProgressIcon size={16} className="text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">
-                  Keep the momentum going
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  AI Generations
-                </CardTitle>
-                <AIIcon size={16} className="text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">
-                  Let AI help you write
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Collaborators
-                </CardTitle>
-                <CollaborationIcon size={16} className="text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">1</div>
-                <p className="text-xs text-muted-foreground">
-                  You + AI assistants
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <ProjectStats />
 
           {/* Writing Goal Progress */}
           <Card>
