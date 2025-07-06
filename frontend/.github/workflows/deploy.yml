@@ -1,0 +1,284 @@
+name: Deploy PlotWeaver UI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/ui
+
+jobs:
+  test:
+    name: Run Tests Before Deploy
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      contents: read
+      packages: write
+    
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+          
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
+            NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_DEFAULT_MODE_SET=professional-writer
+            NEXT_PUBLIC_AVAILABLE_MODE_SETS=professional-writer,ai-first,editor,hobbyist
+            NEXT_PUBLIC_ENABLE_LOCKING=true
+            NEXT_PUBLIC_ENABLE_PREGENERATION=true
+            NEXT_PUBLIC_ENABLE_CONTINUITY=true
+            NEXT_PUBLIC_ENABLE_COLLABORATION=true
+            NEXT_PUBLIC_ENABLE_GIT_INTEGRATION=true
+            NEXT_PUBLIC_SENTRY_DSN=${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+            NEXT_PUBLIC_ANALYTICS_ID=${{ secrets.NEXT_PUBLIC_ANALYTICS_ID }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    environment: staging
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Deploy to staging
+        run: |
+          echo "Deploying to staging environment..."
+          echo "Image: ${{ needs.build-and-push.outputs.image-tag }}"
+          echo "Digest: ${{ needs.build-and-push.outputs.image-digest }}"
+          
+          # Here you would typically use your deployment tool
+          # Examples: kubectl, docker-compose, terraform, etc.
+          
+          # Example with kubectl:
+          # kubectl set image deployment/plotweaver-ui plotweaver-ui=${{ needs.build-and-push.outputs.image-tag }}
+          
+          # Example with docker-compose on remote server:
+          # ssh user@staging-server "cd /app && docker-compose pull && docker-compose up -d"
+
+  run-smoke-tests:
+    name: Run Smoke Tests
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+        
+      - name: Run smoke tests against staging
+        run: npm run test:smoke
+        env:
+          BASE_URL: ${{ secrets.STAGING_URL }}
+          
+      - name: Upload smoke test results
+        uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: smoke-test-results
+          path: test-results/
+          retention-days: 7
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push, run-smoke-tests]
+    environment: production
+    if: github.ref == 'refs/heads/main' && needs.run-smoke-tests.result == 'success'
+    
+    steps:
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          echo "Image: ${{ needs.build-and-push.outputs.image-tag }}"
+          echo "Digest: ${{ needs.build-and-push.outputs.image-digest }}"
+          
+          # Production deployment commands
+          # This would include:
+          # - Blue/green deployment
+          # - Rolling updates
+          # - Health checks
+          # - Rollback capability
+          
+          # Example with zero-downtime deployment:
+          # kubectl patch deployment plotweaver-ui -p '{"spec":{"template":{"spec":{"containers":[{"name":"plotweaver-ui","image":"${{ needs.build-and-push.outputs.image-tag }}"}]}}}}'
+          # kubectl rollout status deployment/plotweaver-ui --timeout=300s
+
+  post-deploy-tests:
+    name: Post-Deployment Tests
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run production health checks
+        run: |
+          curl -f ${{ secrets.PRODUCTION_URL }}/health || exit 1
+          curl -f ${{ secrets.PRODUCTION_URL }}/api/health || exit 1
+          
+      - name: Run critical path tests
+        run: npm run test:critical-path
+        env:
+          BASE_URL: ${{ secrets.PRODUCTION_URL }}
+          
+      - name: Performance baseline check
+        run: npm run test:performance-baseline
+        env:
+          BASE_URL: ${{ secrets.PRODUCTION_URL }}
+
+  notify-deployment:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy-production, post-deploy-tests]
+    if: always() && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Notify Slack
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ needs.deploy-production.result == 'success' && needs.post-deploy-tests.result == 'success' && 'success' || 'failure' }}
+          channel: '#deployments'
+          text: |
+            PlotWeaver UI Deployment Status: ${{ needs.deploy-production.result == 'success' && needs.post-deploy-tests.result == 'success' && '✅ Success' || '❌ Failed' }}
+            
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            
+            Production URL: ${{ secrets.PRODUCTION_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()
+        
+      - name: Create GitHub Release (on tag)
+        uses: actions/create-release@v1
+        if: startsWith(github.ref, 'refs/tags/') && needs.deploy-production.result == 'success'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: PlotWeaver UI ${{ github.ref }}
+          body: |
+            ## Changes in this Release
+            
+            Docker Image: ${{ needs.build-and-push.outputs.image-tag }}
+            
+            ### Features
+            - Mode-set based UI system
+            - Real-time collaboration
+            - AI-powered content generation
+            - Advanced locking system
+            - Git integration
+            
+            ### Deployment
+            - Staging: ✅ Success
+            - Production: ✅ Success
+            - Post-deployment tests: ✅ Passed
+          draft: false
+          prerelease: false
+
+  rollback:
+    name: Rollback on Failure
+    runs-on: ubuntu-latest
+    needs: [deploy-production, post-deploy-tests]
+    if: failure() && github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+      - name: Rollback production deployment
+        run: |
+          echo "Rolling back production deployment..."
+          
+          # Rollback commands would go here
+          # Examples:
+          # kubectl rollout undo deployment/plotweaver-ui
+          # docker service update --rollback plotweaver_ui
+          
+          echo "Rollback completed"
+          
+      - name: Notify rollback
+        uses: 8398a7/action-slack@v3
+        with:
+          status: warning
+          channel: '#deployments'
+          text: |
+            🚨 PlotWeaver UI Deployment ROLLED BACK
+            
+            Commit: ${{ github.sha }}
+            Author: ${{ github.actor }}
+            
+            Reason: Post-deployment tests failed
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always()

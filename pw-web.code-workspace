@@ -1,0 +1,43 @@
+{
+    "folders": [
+        {
+            "path": ".",
+            "name": "pw-web"
+        },
+        {
+            "path": "/home/tmcfar/dev/pw2/src",
+            "name": "pw2-src (reference)"
+        },
+        {
+            "path": "/home/tmcfar/dev/pw2/docs",
+            "name": "pw2-docs (reference)"
+        },
+        {
+            "path": "/home/tmcfar/dev/pw2/docs/planning/strategy/pw-web",
+            "name": "pw-web-docs (reference)"
+        },
+        {
+            "path": "/home/tmcfar/dev/pw2/docs/api-contracts",
+            "name": "pw-api-contracts (reference)"
+        }
+    ],
+    "settings": {
+        "npm.packageManager": "pnpm",
+        "workbench.colorTheme": "Atom One Dark",
+        "python.terminal.activateEnvironment": true,
+        "python.defaultInterpreterPath": ".venv/bin/python",
+        "python.analysis.typeCheckingMode": "basic",
+        "editor.formatOnSave": true,
+        "python.formatting.provider": "ruff",
+        "python.linting.enabled": true,
+        "python.linting.ruffEnabled": true
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.vscode-pylance",
+            "matangover.mypy",
+            "njpwerner.autodocstring"
+        ]
+    }
+}

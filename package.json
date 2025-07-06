@@ -1,0 +1,18 @@
+{
+  "name": "plotweaver-web",
+  "version": "0.1.0", 
+  "description": "PlotWeaver Web Frontend Application",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd src && python -m uvicorn server.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "test": "cd frontend && npm run test",
+    "lint": "cd frontend && npm run lint",
+    "start": "cd frontend && npm run start",
+    "install:frontend": "cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

@@ -1,0 +1,76 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+*.pyo
+*.pyc
+__pycache__/
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env
+frontend/.env.local
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+frontend/build/
+*.egg-info/
+.venv/
+
+# IDE files
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+frontend/logs/
+
+# Test results
+test-results/
+frontend/test-results/
+coverage/
+frontend/coverage/
+.nyc_output/
+
+# Docker
+.dockerignore
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Build artifacts
+*.tsbuildinfo
+frontend/*.tsbuildinfo
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/
+frontend/playwright/.cache/
+
+# Monitoring
+sentry.properties
