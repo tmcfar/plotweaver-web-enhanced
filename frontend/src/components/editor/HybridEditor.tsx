@@ -1,6 +1,5 @@
-import { FC } from 'react';
-import { TiptapEditor } from './TiptapEditor';
-import { MonacoEditor } from './MonacoEditor';
+import { FC, Suspense } from 'react';
+import { TiptapEditor, MonacoEditor } from './lazyEditors';
 import { useLockStore } from '../../hooks/useLockStore';
 import { ProjectFile } from '../panels/FileTreeItem';
 
@@ -23,9 +22,17 @@ export const HybridEditor: FC<HybridEditorProps> = ({ file, onSave }) => {
 
   // Determine which editor to use based on file type
   if (file.type === 'scene') {
-    return <TiptapEditor file={file} config={editorConfig} onSave={onSave} />;
+    return (
+      <Suspense fallback={<div>Loading Tiptap editor...</div>}>
+        <TiptapEditor file={file} config={editorConfig} onSave={onSave} />
+      </Suspense>
+    );
   } else if (file.type === 'metadata') {
-    return <MonacoEditor file={file} config={editorConfig} onSave={onSave} />;
+    return (
+      <Suspense fallback={<div>Loading Monaco editor...</div>}>
+        <MonacoEditor file={file} config={editorConfig} onSave={onSave} />
+      </Suspense>
+    );
   }
 
   return null;
