@@ -1,7 +1,38 @@
 /** @type {import('next').NextConfig} */
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig = {
   experimental: {
     appDir: true,
+  },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: {
+            minChunks: 2,
+            priority: -20,
+            reuseExistingChunk: true,
+          },
+          vendor: {
+            test: /[\/]node_modules[\/]/,
+            name: 'vendors',
+            priority: -10,
+            chunks: 'all',
+          },
+          editor: {
+            test: /(monaco|tiptap)/,
+            name: 'editor',
+            priority: 10,
+            chunks: 'all',
+          },
+        },
+      };
+    }
+    return config;
   },
   async rewrites() {
     return [
@@ -16,11 +47,6 @@ const nextConfig = {
       },
     ];
   },
-  webpack: (config) => {
-    // Handle WebSocket connections
-    config.externals = [...(config.externals || []), 'ws'];
-    return config;
-  },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

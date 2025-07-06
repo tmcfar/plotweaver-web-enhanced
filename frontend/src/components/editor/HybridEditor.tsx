@@ -2,6 +2,7 @@ import { FC, Suspense } from 'react';
 import { TiptapEditor, MonacoEditor } from './lazyEditors';
 import { useLockStore } from '../../hooks/useLockStore';
 import { ProjectFile } from '../panels/FileTreeItem';
+import { EditorErrorBoundary } from '../ErrorBoundary';
 
 interface HybridEditorProps {
   file: ProjectFile;
@@ -23,15 +24,19 @@ export const HybridEditor: FC<HybridEditorProps> = ({ file, onSave }) => {
   // Determine which editor to use based on file type
   if (file.type === 'scene') {
     return (
-      <Suspense fallback={<div>Loading Tiptap editor...</div>}>
-        <TiptapEditor file={file} config={editorConfig} onSave={onSave} />
-      </Suspense>
+      <EditorErrorBoundary>
+        <Suspense fallback={<div>Loading Tiptap editor...</div>}>
+          <TiptapEditor file={file} config={editorConfig} onSave={onSave} />
+        </Suspense>
+      </EditorErrorBoundary>
     );
   } else if (file.type === 'metadata') {
     return (
-      <Suspense fallback={<div>Loading Monaco editor...</div>}>
-        <MonacoEditor file={file} config={editorConfig} onSave={onSave} />
-      </Suspense>
+      <EditorErrorBoundary>
+        <Suspense fallback={<div>Loading Monaco editor...</div>}>
+          <MonacoEditor file={file} config={editorConfig} onSave={onSave} />
+        </Suspense>
+      </EditorErrorBoundary>
     );
   }
 

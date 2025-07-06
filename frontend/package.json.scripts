@@ -1,0 +1,4 @@
+{
+  "analyze": "ANALYZE=true npm run build",
+  "analyze:server": "ANALYZE=true npm run build && npx serve out"
+}
