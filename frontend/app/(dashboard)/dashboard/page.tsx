@@ -1,10 +1,26 @@
 import { currentUser } from '@clerk/nextjs/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { NoProjectsState } from '@/components/design-system/empty-states'
+import { InlineLoading } from '@/components/design-system/loading-states'
+import { 
+  WritingIcon, 
+  AIIcon, 
+  ProgressIcon, 
+  CollaborationIcon 
+} from '@/components/design-system/icons'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
   const user = await currentUser()
+
+  const handleCreateProject = () => {
+    // This would navigate to create project page
+    console.log('Create project clicked')
+  }
 
   return (
     <div className="container mx-auto p-6">
@@ -17,45 +33,230 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Projects</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              No projects yet. Start your first story!
-            </p>
-            <Button asChild className="mt-4">
-              <Link href="/projects/new">Create Project</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="projects">Projects</TabsTrigger>
+          <TabsTrigger value="writing">Writing</TabsTrigger>
+          <TabsTrigger value="ai">AI Tools</TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Writing Progress</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-muted-foreground">Words written today</p>
-          </CardContent>
-        </Card>
+        <TabsContent value="overview" className="space-y-6">
+          {/* Stats Grid */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Projects
+                </CardTitle>
+                <WritingIcon size={16} className="text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Start your first story
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Assistance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              Available agents ready to help
-            </p>
-            <div className="mt-2 text-sm text-green-600">
-              🤖 GPT-4 Ready
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Words Today
+                </CardTitle>
+                <ProgressIcon size={16} className="text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Keep the momentum going
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  AI Generations
+                </CardTitle>
+                <AIIcon size={16} className="text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">0</div>
+                <p className="text-xs text-muted-foreground">
+                  Let AI help you write
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Collaborators
+                </CardTitle>
+                <CollaborationIcon size={16} className="text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">1</div>
+                <p className="text-xs text-muted-foreground">
+                  You + AI assistants
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Writing Goal Progress */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Daily Writing Goal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Progress</span>
+                  <span className="text-sm text-muted-foreground">0 / 500 words</span>
+                </div>
+                <Progress value={0} className="w-full" />
+                <p className="text-xs text-muted-foreground">
+                  Set a daily writing goal to build consistent habits
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Button asChild className="h-auto p-4 flex flex-col items-start">
+                  <Link href="/projects/new">
+                    <WritingIcon size={24} className="mb-2" />
+                    <span className="font-medium">New Project</span>
+                    <span className="text-xs text-muted-foreground mt-1">
+                      Start a fresh story
+                    </span>
+                  </Link>
+                </Button>
+                
+                <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
+                  <AIIcon size={24} className="mb-2" />
+                  <span className="font-medium">AI Brainstorm</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Generate ideas
+                  </span>
+                </Button>
+                
+                <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
+                  <CollaborationIcon size={24} className="mb-2" />
+                  <span className="font-medium">Invite Collaborator</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    Work together
+                  </span>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="projects">
+          <NoProjectsState onCreateProject={handleCreateProject} />
+        </TabsContent>
+
+        <TabsContent value="writing">
+          <Card>
+            <CardHeader>
+              <CardTitle>Writing Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Character Generator</h4>
+                    <p className="text-sm text-muted-foreground">Create detailed character profiles</p>
+                  </div>
+                  <Badge variant="secondary">Coming Soon</Badge>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Plot Outline</h4>
+                    <p className="text-sm text-muted-foreground">Structure your story beats</p>
+                  </div>
+                  <Badge variant="secondary">Coming Soon</Badge>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <h4 className="font-medium">Scene Editor</h4>
+                    <p className="text-sm text-muted-foreground">Write and edit individual scenes</p>
+                  </div>
+                  <Badge variant="secondary">Coming Soon</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="ai">
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <AIIcon size={20} />
+                  AI Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">GPT-4</span>
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      Ready
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Claude</span>
+                    <Badge variant="outline" className="text-green-600 border-green-600">
+                      Ready
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Story Analysis</span>
+                    <InlineLoading size="sm" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Usage This Month</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Generations</span>
+                      <span>0 / 100</span>
+                    </div>
+                    <Progress value={0} className="mt-2" />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Tokens</span>
+                      <span>0 / 10,000</span>
+                    </div>
+                    <Progress value={0} className="mt-2" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
