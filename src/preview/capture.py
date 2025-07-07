@@ -7,8 +7,10 @@ async def capture_preview(
 ):
     async with async_playwright() as p:
         browser = await p.chromium.launch()
-        page = await browser.new_page()
-        await page.set_viewport_size({"width": width, "height": height})
-        await page.goto(url)
-        await page.screenshot(path=str(output_path))
-        await browser.close()
+        try:
+            page = await browser.new_page()
+            await page.set_viewport_size({"width": width, "height": height})
+            await page.goto(url)
+            await page.screenshot(path=str(output_path))
+        finally:
+            await browser.close()

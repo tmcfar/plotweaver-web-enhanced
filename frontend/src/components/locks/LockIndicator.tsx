@@ -16,6 +16,7 @@ interface LockIndicatorProps {
   onOverrideRequest?: (componentId: string, reason: string) => void;
   size?: 'sm' | 'md' | 'lg';
   showDetails?: boolean;
+  interactive?: boolean;
 }
 
 const LOCK_CONFIG = {
@@ -93,13 +94,25 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
   onLockToggle,
   onOverrideRequest,
   size = 'md',
-  showDetails = true
+  showDetails = true,
+  interactive = true
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
 
   if (!lockLevel) {
+    if (!interactive) {
+      return (
+        <span 
+          className="lock-indicator-empty opacity-30"
+          title="No lock"
+        >
+          <span className={`${SIZE_CONFIG[size].icon} text-gray-400`}>🔓</span>
+        </span>
+      );
+    }
+    
     return (
       <button
         onClick={() => onLockToggle?.(componentId)}
@@ -134,14 +147,14 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
     <div className="lock-indicator relative">
       <div
         className={`
-          flex items-center space-x-1 rounded-lg cursor-pointer transition-all
+          flex items-center space-x-1 rounded-lg transition-all
           ${lockConfig.bgColor} ${lockConfig.borderColor} border
           ${sizeConfig.padding}
-          hover:shadow-sm
+          ${interactive ? 'cursor-pointer hover:shadow-sm' : ''}
         `}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        onClick={() => onLockToggle?.(componentId)}
+        onClick={interactive ? () => onLockToggle?.(componentId) : undefined}
       >
         {/* Lock Level Icon */}
         <span className={`${sizeConfig.icon} ${lockConfig.color}`}>
@@ -176,7 +189,7 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
         )}
 
         {/* Override Button */}
-        {canOverride && (
+        {canOverride && interactive && (
           <button
             onClick={(e) => {
               e.stopPropagation();

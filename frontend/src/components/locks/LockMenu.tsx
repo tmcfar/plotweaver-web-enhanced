@@ -43,7 +43,13 @@ export const LockMenu: FC<LockMenuProps> = ({
         onClick={() => setShowMenu(!showMenu)}
         aria-label="Lock menu"
       >
-        <LockIndicator level={currentLock?.level} showTooltip={false} />
+        <LockIndicator 
+          componentId={componentId}
+          lockLevel={currentLock?.level} 
+          showDetails={false}
+          size="sm"
+          interactive={false}
+        />
         <ChevronDown className="w-4 h-4" />
       </button>
 

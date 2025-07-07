@@ -8,8 +8,15 @@ jest.mock('../locks', () => ({
   }
 }));
 
-// Set a longer timeout for all tests
-jest.setTimeout(30000);
+// Mock the lock conflict dialog
+jest.mock('../../constants/dialogConfig', () => ({
+  LOCK_CONFLICT_DIALOG_CONFIG: {
+    showDialog: jest.fn()
+  }
+}));
+
+// Set a shorter timeout for faster tests
+jest.setTimeout(5000);
 
 describe('AgentClient', () => {
   let client: AgentClient;
@@ -48,9 +55,12 @@ describe('AgentClient', () => {
 
     const resultPromise = client.executeAgent('test-agent', { data: 'test' });
 
+    // Wait for EventSource to be created
+    await new Promise(resolve => setTimeout(resolve, 10));
+
     // Simulate successful completion
     if (mockEventSource.onmessage) {
-      mockEventSource.onmessage?.({
+      mockEventSource.onmessage({
         data: JSON.stringify({
           status: 'completed',
           result: { success: true }
@@ -75,15 +85,13 @@ describe('AgentClient', () => {
 
     (lockService.checkLockConflicts as jest.Mock).mockResolvedValue(conflicts);
 
-    const promiseResult = client.executeAgent('test-agent', { data: 'test' });
-
-    // Mock showLockConflictDialog
-    const mockShowLockConflictDialog = jest.fn(({ onCancel }: { onCancel: () => void }) => {
+    // Import and setup the mock for the dialog config
+    const { LOCK_CONFLICT_DIALOG_CONFIG } = require('../../constants/dialogConfig');
+    (LOCK_CONFLICT_DIALOG_CONFIG.showDialog as jest.Mock).mockImplementation(({ onCancel }: { onCancel: () => void }) => {
       onCancel();
     });
-    (globalThis as unknown as { showLockConflictDialog: jest.Mock }).showLockConflictDialog = mockShowLockConflictDialog;
 
-    const result = await promiseResult;
+    const result = await client.executeAgent('test-agent', { data: 'test' });
     expect(result.cancelled).toBe(true);
   });
 
@@ -96,9 +104,12 @@ describe('AgentClient', () => {
 
     const resultPromise = client.executeAgent('test-agent', { data: 'test' });
 
+    // Wait for EventSource to be created
+    await new Promise(resolve => setTimeout(resolve, 10));
+
     // Simulate error
     if (mockEventSource.onmessage) {
-      mockEventSource.onmessage?.({
+      mockEventSource.onmessage({
         data: JSON.stringify({
           status: 'error',
           error: 'Test error'

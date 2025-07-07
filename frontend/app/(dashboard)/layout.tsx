@@ -3,6 +3,7 @@ import { auth } from '@clerk/nextjs/server'
 import { UserButton } from '@clerk/nextjs'
 import Logo from '@/components/brand/Logo'
 import { ThemeToggle } from '@/components/design-system/theme-toggle'
+import { ProjectSelector } from '@/components/projects/ProjectSelector'
 
 export default function DashboardLayout({
   children,
@@ -19,7 +20,10 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="flex items-center justify-between px-6 py-4">
-          <Logo size="md" />
+          <div className="flex items-center space-x-8">
+            <Logo size="md" />
+            <ProjectSelector />
+          </div>
           <div className="flex items-center space-x-4">
             <ThemeToggle />
             <UserButton 

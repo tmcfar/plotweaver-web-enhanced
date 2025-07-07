@@ -1,25 +1,31 @@
-# PlotWeaver UI Docker Configuration
+# PlotWeaver UI Docker Configuration - Production Optimized
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# Copy dependency files
+COPY package.json package-lock.json* ./
+
+# Install production dependencies
+RUN npm ci --only=production
+
+# Install all dependencies for building
+FROM base AS dev-deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+
+# Copy dependencies
+COPY --from=dev-deps /app/node_modules ./node_modules
 COPY . .
 
 # Set build-time environment variables
@@ -27,61 +33,78 @@ ARG NEXT_PUBLIC_APP_URL
 ARG NEXT_PUBLIC_DEFAULT_MODE_SET=professional-writer
 ARG NEXT_PUBLIC_AVAILABLE_MODE_SETS=professional-writer,ai-first,editor,hobbyist
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_WS_URL
 ARG NEXT_PUBLIC_ENABLE_LOCKING=true
 ARG NEXT_PUBLIC_ENABLE_PREGENERATION=true
 ARG NEXT_PUBLIC_ENABLE_CONTINUITY=true
 ARG NEXT_PUBLIC_ENABLE_COLLABORATION=true
 ARG NEXT_PUBLIC_ENABLE_GIT_INTEGRATION=true
+ARG NEXT_PUBLIC_ENABLE_OFFLINE=true
 ARG NEXT_PUBLIC_SENTRY_DSN
 ARG NEXT_PUBLIC_ANALYTICS_ID
+ARG SENTRY_AUTH_TOKEN
 
 # Set environment variables for build
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_DEFAULT_MODE_SET=$NEXT_PUBLIC_DEFAULT_MODE_SET
 ENV NEXT_PUBLIC_AVAILABLE_MODE_SETS=$NEXT_PUBLIC_AVAILABLE_MODE_SETS
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 ENV NEXT_PUBLIC_ENABLE_LOCKING=$NEXT_PUBLIC_ENABLE_LOCKING
 ENV NEXT_PUBLIC_ENABLE_PREGENERATION=$NEXT_PUBLIC_ENABLE_PREGENERATION
 ENV NEXT_PUBLIC_ENABLE_CONTINUITY=$NEXT_PUBLIC_ENABLE_CONTINUITY
 ENV NEXT_PUBLIC_ENABLE_COLLABORATION=$NEXT_PUBLIC_ENABLE_COLLABORATION
 ENV NEXT_PUBLIC_ENABLE_GIT_INTEGRATION=$NEXT_PUBLIC_ENABLE_GIT_INTEGRATION
+ENV NEXT_PUBLIC_ENABLE_OFFLINE=$NEXT_PUBLIC_ENABLE_OFFLINE
 ENV NEXT_PUBLIC_SENTRY_DSN=$NEXT_PUBLIC_SENTRY_DSN
 ENV NEXT_PUBLIC_ANALYTICS_ID=$NEXT_PUBLIC_ANALYTICS_ID
+ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
 
-# Build the application
-RUN npm run build
+# Build the application with telemetry disabled
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Run build with proper error handling
+RUN npm run build && \
+    # Generate service worker manifest
+    npm run generate-sw && \
+    # Create standalone output
+    npm run build:standalone
 
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-# Disable telemetry during runtime.
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Create nextjs user
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
 
-# Copy built application
+# Create nextjs user and group
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy public assets (including PWA icons and manifest)
 COPY --from=builder /app/public ./public
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
+# Copy standalone build
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Create logs directory
-RUN mkdir -p /app/logs && chown nextjs:nodejs /app/logs
+# Copy service worker
+COPY --from=builder --chown=nextjs:nodejs /app/public/sw.js ./public/sw.js
 
-# Create uploads directory for local file storage
-RUN mkdir -p /app/uploads && chown nextjs:nodejs /app/uploads
+# Copy production dependencies
+COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
-# Switch to nextjs user
+# Create necessary directories
+RUN mkdir -p /app/logs /app/uploads /app/.next/cache && \
+    chown -R nextjs:nodejs /app/logs /app/uploads /app/.next
+
+# Security: Remove unnecessary files
+RUN rm -rf /app/.env* /app/README.md /app/docs
+
+# Switch to non-root user
 USER nextjs
 
 # Expose port
@@ -90,9 +113,12 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+# Health check with proper timeout
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); })"
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
 
 # Start the application
 CMD ["node", "server.js"]

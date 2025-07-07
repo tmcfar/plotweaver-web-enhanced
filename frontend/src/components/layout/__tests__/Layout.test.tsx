@@ -43,7 +43,7 @@ describe('Layout Component', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('adapts layout based on mode-set configuration', () => {
+  it('adapts layout based on mode-set configuration - ai-first', () => {
     mockUseGlobalStore.mockImplementation(() => ({
       modeSet: 'ai-first',
     }));
@@ -54,8 +54,26 @@ describe('Layout Component', () => {
       </Layout>
     );
 
-    expect(document.querySelector('.panel-left')).not.toBeInTheDocument();
+    // ai-first mode has left=true, right=true, bottom=false
+    expect(document.querySelector('.panel-left')).toBeInTheDocument();
     expect(document.querySelector('.panel-right')).toBeInTheDocument();
-    expect(document.querySelector('.panel-bottom')).toBeInTheDocument();
+    expect(document.querySelector('.panel-bottom')).not.toBeInTheDocument();
+  });
+
+  it('adapts layout based on mode-set configuration - hobbyist', () => {
+    mockUseGlobalStore.mockImplementation(() => ({
+      modeSet: 'hobbyist',
+    }));
+
+    render(
+      <Layout>
+        <div>Test Content</div>
+      </Layout>
+    );
+
+    // hobbyist mode has left=true, right=false, bottom=false
+    expect(document.querySelector('.panel-left')).toBeInTheDocument();
+    expect(document.querySelector('.panel-right')).not.toBeInTheDocument();
+    expect(document.querySelector('.panel-bottom')).not.toBeInTheDocument();
   });
 });

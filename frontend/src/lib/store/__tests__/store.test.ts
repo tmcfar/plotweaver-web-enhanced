@@ -1,6 +1,11 @@
 import { renderHook, act } from '@testing-library/react';
 import { useStore } from '../createStore';
 
+// Clear localStorage before each test to ensure clean state
+beforeEach(() => {
+  localStorage.clear();
+});
+
 // Mock localStorage
 const localStorageMock = {
   getItem: jest.fn(),
@@ -152,6 +157,15 @@ describe('Zustand Store', () => {
     it('should complete jobs', () => {
       const { result } = renderHook(() => useStore());
 
+      // Clear any existing jobs first
+      act(() => {
+        result.current.clearCompleted();
+        // Clear active jobs by creating a fresh state
+        result.current.activeJobs.forEach((_, jobId) => {
+          result.current.removeJob(jobId);
+        });
+      });
+
       const jobData = {
         agentName: 'Test Agent',
         status: 'queued' as const
@@ -159,12 +173,25 @@ describe('Zustand Store', () => {
 
       let jobId: string;
 
+      // Add and start job first
       act(() => {
         jobId = result.current.addJob(jobData);
+      });
+
+      act(() => {
         result.current.startJob(jobId);
+      });
+
+      // Verify job is active
+      expect(result.current.activeJobs.has(jobId)).toBe(true);
+      expect(result.current.activeJobs.size).toBe(1);
+
+      // Complete the job
+      act(() => {
         result.current.completeJob(jobId, { success: true });
       });
 
+      // Verify job is completed and removed from active
       expect(result.current.activeJobs.size).toBe(0);
       expect(result.current.completedJobs).toHaveLength(1);
       expect(result.current.completedJobs[0].result).toEqual({ success: true });
@@ -218,6 +245,11 @@ describe('Zustand Store', () => {
     it('should compute mode-specific selectors correctly', () => {
       const { result } = renderHook(() => useStore());
 
+      // Reset to known state first
+      act(() => {
+        result.current.setModeSet('professional-writer');
+      });
+
       expect(result.current.isProfessionalMode()).toBe(true);
       expect(result.current.isAIFirstMode()).toBe(false);
 
@@ -231,6 +263,11 @@ describe('Zustand Store', () => {
 
     it('should compute feature availability correctly', () => {
       const { result } = renderHook(() => useStore());
+
+      // Reset to known state first
+      act(() => {
+        result.current.setModeSet('professional-writer');
+      });
 
       // Professional writer mode has manual save
       expect(result.current.isFeatureEnabled('manualSave')).toBe(true);

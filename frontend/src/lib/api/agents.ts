@@ -1,6 +1,6 @@
 import { AgentProgress } from '../store/agentProgressStore';
 import { LockConflict, Resolution, lockService } from './locks';
-import { LOCK_CONFLICT_DIALOG_CONFIG } from '../../components/dialogs/LockConflictDialog';
+import { LOCK_CONFLICT_DIALOG_CONFIG } from '../constants/dialogConfig';
 
 export interface AgentResult {
   cancelled?: boolean;

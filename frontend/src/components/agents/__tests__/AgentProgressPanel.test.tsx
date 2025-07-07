@@ -4,7 +4,11 @@ import { useAgentQueue } from '../../../hooks/useAgentQueue';
 
 // Mock the hooks
 jest.mock('../../../hooks/useAgentQueue');
-jest.mock('../../../hooks/useAgentProgress');
+jest.mock('../../../hooks/useAgentProgress', () => ({
+  useAgentProgress: jest.fn(() => ({
+    progress: { percentage: 50, status: 'running', message: 'Test progress' }
+  }))
+}));
 
 const mockUseAgentQueue = useAgentQueue as jest.MockedFunction<typeof useAgentQueue>;
 
