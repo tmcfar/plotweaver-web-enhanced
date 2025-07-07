@@ -11,13 +11,11 @@ import { NoProjectsState } from '@/components/design-system/empty-states'
 import { InlineLoading } from '@/components/design-system/loading-states'
 import { CreateProjectWizard } from '@/components/projects/CreateProjectWizard'
 import { ProjectStats } from '@/components/projects/ProjectStats'
-import { 
-  WritingIcon, 
-  AIIcon, 
-  ProgressIcon, 
-  CollaborationIcon 
+import {
+  WritingIcon,
+  AIIcon,
+  CollaborationIcon
 } from '@/components/design-system/icons'
-import Link from 'next/link'
 
 export default function DashboardPage() {
   const { user } = useUser()
@@ -76,7 +74,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Button 
+                <Button
                   onClick={handleCreateProject}
                   className="h-auto p-4 flex flex-col items-start"
                 >
@@ -86,7 +84,7 @@ export default function DashboardPage() {
                     Start a fresh story
                   </span>
                 </Button>
-                
+
                 <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
                   <AIIcon size={24} className="mb-2" />
                   <span className="font-medium">AI Brainstorm</span>
@@ -94,7 +92,7 @@ export default function DashboardPage() {
                     Generate ideas
                   </span>
                 </Button>
-                
+
                 <Button variant="outline" className="h-auto p-4 flex flex-col items-start">
                   <CollaborationIcon size={24} className="mb-2" />
                   <span className="font-medium">Invite Collaborator</span>
@@ -125,7 +123,7 @@ export default function DashboardPage() {
                   </div>
                   <Badge variant="secondary">Coming Soon</Badge>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <h4 className="font-medium">Plot Outline</h4>
@@ -133,7 +131,7 @@ export default function DashboardPage() {
                   </div>
                   <Badge variant="secondary">Coming Soon</Badge>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-4 border rounded-lg">
                   <div>
                     <h4 className="font-medium">Scene Editor</h4>
