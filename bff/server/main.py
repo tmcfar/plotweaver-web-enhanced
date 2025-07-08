@@ -9,6 +9,7 @@ from fastapi import (
     HTTPException,
     WebSocketDisconnect,
     Query,
+    Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -19,8 +20,12 @@ from ..auth.rate_limiter import rate_limiter
 from .constants import MAX_CONNECTIONS, MAX_MESSAGE_SIZE, HEARTBEAT_TIMEOUT
 from .bounded_collections import BoundedDict, BoundedSet
 from .worldbuilding_endpoints import router as worldbuilding_router
+from ..services.git_manager import GitRepoManager
 
 app = FastAPI(title="PlotWeaver Web Enhanced")
+
+# Initialize Git manager
+git_manager = GitRepoManager()
 
 # Include routers
 app.include_router(worldbuilding_router)
@@ -577,6 +582,53 @@ async def set_user_mode_set(mode_set_data: Dict[str, Any]):
     mode_set_id = mode_set_data.get("modeSetId")
     print(f"Setting user mode-set to: {mode_set_id}")
     return {"status": "updated", "modeSetId": mode_set_id}
+
+
+# Git API endpoints
+@app.get("/api/git/content/{project_id}/{file_path:path}")
+async def get_file_content(project_id: str, file_path: str):
+    """Get file content from git repository"""
+    return await git_manager.get_file_content(project_id, file_path)
+
+
+@app.get("/api/git/tree/{project_id}")
+async def get_project_tree(project_id: str, path: str = ""):
+    """Get directory tree from git repository"""
+    return await git_manager.get_tree(project_id, path)
+
+
+@app.get("/api/git/diff/{project_id}/{base_ref}/{head_ref}")
+async def get_diff(project_id: str, base_ref: str, head_ref: str = "HEAD"):
+    """Get diff between two refs"""
+    return await git_manager.get_diff(project_id, base_ref, head_ref)
+
+
+@app.get("/api/git/history/{project_id}/{file_path:path}")
+async def get_file_history(project_id: str, file_path: str, limit: int = 10):
+    """Get commit history for a file"""
+    return await git_manager.get_file_history(project_id, file_path, limit)
+
+
+@app.post("/api/webhooks/github")
+async def handle_webhook(request: Request):
+    """Handle GitHub webhook to trigger git pull"""
+    payload = await request.json()
+    project_id = payload.get("project_id")
+    
+    if not project_id:
+        raise HTTPException(400, "Missing project_id")
+    
+    # Pull latest changes
+    result = await git_manager.pull_latest(project_id)
+    
+    # Broadcast update via WebSocket
+    await manager.broadcast({
+        "type": "git_update",
+        "project_id": project_id,
+        "updated_files": result["updated_files"]
+    })
+    
+    return {"status": "ok", "result": result}
 
 
 @app.websocket("/ws")
