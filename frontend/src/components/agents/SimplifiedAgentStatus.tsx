@@ -1,8 +1,8 @@
 import { FC } from 'react';
-import { AgentJob } from '../../lib/store/agentProgressStore';
+import { AgentJobWithTask } from '../../lib/store/agentProgressStore';
 
 interface SimplifiedAgentStatusProps {
-  active: AgentJob | undefined;
+  active: AgentJobWithTask | undefined;
 }
 
 export const SimplifiedAgentStatus: FC<SimplifiedAgentStatusProps> = ({ active }) => {

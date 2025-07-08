@@ -10,8 +10,15 @@ import type {
   WorldbuildingStatus,
   SetupPath,
   SetupStepCompleteRequest,
-  AssumptionOverrideRequest
-} from '@/types/worldbuilding';
+  AssumptionOverrideRequest,
+  User,
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  Subscription,
+  Usage,
+  CostBreakdown,
+} from '@/types';
 import { worldbuildingApi } from './worldbuildingApi';
 import { bffApi } from './bffApi';
 
@@ -45,6 +52,7 @@ export interface Project {
   name: string;
   description?: string;
   git_repo_url: string;
+  git_repo_path?: string;
   git_initialized: boolean;
   mode_set: string;
   statistics: {
@@ -246,11 +254,11 @@ export const api = {
 
   // Auth endpoints
   auth: {
-    register: async (data: { email: string; password: string; name?: string }) => {
+    register: async (data: RegisterRequest): Promise<AuthResponse> => {
       const response = await apiClient.post('/api/v1/auth/register', data);
       return response.data;
     },
-    login: async (data: { email: string; password: string }) => {
+    login: async (data: LoginRequest): Promise<AuthResponse> => {
       const response = await apiClient.post('/api/v1/auth/login', data);
       return response.data;
     },
@@ -262,11 +270,11 @@ export const api = {
       const response = await apiClient.post('/api/v1/auth/refresh');
       return response.data;
     },
-    getUser: async () => {
+    getUser: async (): Promise<User> => {
       const response = await apiClient.get('/api/v1/auth/user');
       return response.data;
     },
-    updateUser: async (data: any) => {
+    updateUser: async (data: Partial<User>): Promise<User> => {
       const response = await apiClient.patch('/api/v1/auth/user', data);
       return response.data;
     },
@@ -274,11 +282,11 @@ export const api = {
 
   // User profile endpoints
   profile: {
-    get: async () => {
+    get: async (): Promise<User> => {
       const response = await apiClient.get('/api/v1/user/profile');
       return response.data;
     },
-    update: async (data: any) => {
+    update: async (data: Partial<User>): Promise<User> => {
       const response = await apiClient.patch('/api/v1/user/profile', data);
       return response.data;
     },
@@ -290,11 +298,11 @@ export const api = {
 
   // Billing endpoints
   billing: {
-    getSubscription: async () => {
+    getSubscription: async (): Promise<Subscription> => {
       const response = await apiClient.get('/api/v1/billing/subscription');
       return response.data;
     },
-    getUsage: async (params?: { start_date?: string; end_date?: string }) => {
+    getUsage: async (params?: { start_date?: string; end_date?: string }): Promise<Usage & { cost_breakdown: CostBreakdown }> => {
       const response = await apiClient.get('/api/v1/billing/usage', { params });
       return response.data;
     },

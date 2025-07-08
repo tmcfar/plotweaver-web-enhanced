@@ -40,10 +40,26 @@ export const createGlobalSlice: StateCreator<GlobalSlice> = (set, get) => ({
   user: null,
   modeSet: 'professional-writer',
   modeSetPreferences: {
-    'professional-writer': {},
-    'ai-first': {},
-    'editor': {},
-    'hobbyist': {}
+    'professional-writer': {
+      panelSizes: {},
+      editorSettings: {},
+      shortcuts: {}
+    },
+    'ai-first': {
+      panelSizes: {},
+      editorSettings: {},
+      shortcuts: {}
+    },
+    'editor': {
+      panelSizes: {},
+      editorSettings: {},
+      shortcuts: {}
+    },
+    'hobbyist': {
+      panelSizes: {},
+      editorSettings: {},
+      shortcuts: {}
+    }
   },
   currentProject: null,
   writingMode: { primary: 'discovery' },

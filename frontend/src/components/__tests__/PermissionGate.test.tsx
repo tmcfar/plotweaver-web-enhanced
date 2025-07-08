@@ -11,7 +11,7 @@ describe('PermissionGate', () => {
   const mockCheckPermission = jest.fn();
 
   beforeEach(() => {
-    (useWritingModeStore as jest.Mock).mockReturnValue({
+    (useWritingModeStore as unknown as jest.Mock).mockReturnValue({
       checkPermission: mockCheckPermission
     });
   });

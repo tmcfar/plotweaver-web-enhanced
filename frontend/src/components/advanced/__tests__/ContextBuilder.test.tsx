@@ -92,12 +92,12 @@ describe('ContextBuilder', () => {
     mockFetchAvailableComponents.mockResolvedValue(mockComponents);
   });
 
-  const renderComponent = () => {
+  const renderComponent = (availableComponents = mockComponents) => {
     return render(
       <QueryClientProvider client={queryClient}>
         <ContextBuilder 
           sceneId="test-scene" 
-          availableComponents={[]}
+          availableComponents={availableComponents}
           currentContext={[]}
           onContextUpdate={() => {}}
           onLockValidation={async () => ({ valid: true, issues: [], suggestions: [], estimatedTokens: 0 })}
@@ -317,20 +317,19 @@ describe('ContextBuilder', () => {
     });
   });
 
-  it('shows loading state', () => {
+  it('renders component interface', () => {
     renderComponent();
 
-    expect(screen.getByText('Loading components...')).toBeInTheDocument();
+    expect(screen.getByText('Available Components')).toBeInTheDocument();
+    expect(screen.getByText('Scene Context')).toBeInTheDocument();
   });
 
-  it('displays empty state when no components available', async () => {
-    mockFetchAvailableComponents.mockResolvedValueOnce([]);
-
-    renderComponent();
+  it('displays empty state when no components in context', async () => {
+    renderComponent([]);
 
     await waitFor(() => {
-      expect(screen.getByText('No components available')).toBeInTheDocument();
-      expect(screen.getByText('Create some content first')).toBeInTheDocument();
+      expect(screen.getByText('No components in context')).toBeInTheDocument();
+      expect(screen.getByText('Add components from the browser to build scene context')).toBeInTheDocument();
     });
   });
 });

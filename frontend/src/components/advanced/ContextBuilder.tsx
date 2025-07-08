@@ -352,12 +352,14 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
             </div>
           ) : (
             <DragDropContext onDragEnd={handleDragEnd}>
+              {/* @ts-ignore - DnD types issue with React 18 */}
               <Droppable droppableId="context">
-                {(provided) => (
+                {(provided: any) => (
                   <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                     {context.map((item, index) => (
+                      /* @ts-ignore - DnD types issue with React 18 */
                       <Draggable key={item.id} draggableId={item.id} index={index}>
-                        {(provided, snapshot) => (
+                        {(provided: any, snapshot: any) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
@@ -416,7 +418,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
                         )}
                       </Draggable>
                     ))}
-                    {provided.placeholder}
+                    {provided.placeholder as React.ReactNode}
                   </div>
                 )}
               </Droppable>

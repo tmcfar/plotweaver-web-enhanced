@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { Dialog } from '@radix-ui/react-dialog';
+import * as Dialog from '@radix-ui/react-dialog';
 import { LockConflict, Resolution } from '../../lib/api/locks';
 
 export interface LockConflictDialogProps {

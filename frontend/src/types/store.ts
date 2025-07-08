@@ -32,7 +32,7 @@ export interface AgentJob {
   displayName: string;
   status: 'queued' | 'running' | 'completed' | 'error';
   progress: number;
-  result?: Record<string, unknown>;
+  result?: unknown;
   error?: string;
   createdAt: Date;
   startedAt: Date;

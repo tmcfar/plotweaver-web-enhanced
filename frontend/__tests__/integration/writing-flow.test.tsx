@@ -279,9 +279,12 @@ describe('Complete Writing Flow', () => {
       queuedJobs: preGeneratedScenes.map(scene => ({
         id: scene.id,
         agentName: 'Scene Generator',
+        displayName: 'Scene Generator',
         status: 'completed' as const,
+        progress: 100,
         result: scene,
-        createdAt: new Date()
+        createdAt: new Date(),
+        startedAt: new Date()
       }))
     });
     

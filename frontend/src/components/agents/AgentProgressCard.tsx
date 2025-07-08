@@ -1,8 +1,8 @@
 import { FC } from 'react';
-import { AgentJob } from '../../lib/store/agentProgressStore';
+import { AgentJobWithTask } from '../../lib/store/agentProgressStore';
 
 interface AgentProgressCardProps {
-  agent: AgentJob;
+  agent: AgentJobWithTask;
   progress: number;
   canCancel: boolean;
 }

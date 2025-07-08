@@ -5,6 +5,7 @@ export type LockType = 'personal' | 'editorial' | 'collaborative';
 export interface ComponentLock {
   id: string;
   componentId: string;
+  componentType: string;
   level: LockLevel;
   type: LockType;
   reason: string;
@@ -17,12 +18,15 @@ export interface ComponentLock {
 export interface LockConflict {
   id: string;
   componentId: string;
+  componentType: string;
   type: 'lock_override' | 'concurrent_edit' | 'permission_change' | 'merge_conflict';
   description: string;
   currentState: any;
   conflictingState: any;
   priority: 'low' | 'medium' | 'high' | 'critical';
   affectedUsers: string[];
+  lockedBy: string;
+  lockLevel: string;
   createdAt: Date;
 }
 

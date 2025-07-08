@@ -42,10 +42,7 @@ describe('AgentProgressPanel', () => {
     mockUseAgentQueue.mockReturnValue({
       active: null,
       queue: [],
-      completed: [],
-      addJob: jest.fn(),
-      removeJob: jest.fn(),
-      clearCompleted: jest.fn()
+      completed: []
     });
 
     render(<AgentProgressPanel />);
@@ -58,10 +55,7 @@ describe('AgentProgressPanel', () => {
     mockUseAgentQueue.mockReturnValue({
       active: mockActiveJobs[0],
       queue: mockActiveJobs.slice(1),
-      completed: [],
-      addJob: jest.fn(),
-      removeJob: jest.fn(),
-      clearCompleted: jest.fn()
+      completed: []
     });
 
     render(<AgentProgressPanel />);
@@ -74,10 +68,7 @@ describe('AgentProgressPanel', () => {
     mockUseAgentQueue.mockReturnValue({
       active: mockActiveJobs[0],
       queue: [],
-      completed: [],
-      addJob: jest.fn(),
-      removeJob: jest.fn(),
-      clearCompleted: jest.fn()
+      completed: []
     });
 
     render(<AgentProgressPanel />);
