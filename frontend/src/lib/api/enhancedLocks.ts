@@ -14,6 +14,7 @@ interface RequestCache {
   delete(key: string): void;
   clear(): void;
   isValid(key: string): boolean;
+  keys(): IterableIterator<string>;
 }
 
 class MemoryCache implements RequestCache {
@@ -56,6 +57,10 @@ class MemoryCache implements RequestCache {
     const now = new Date().getTime();
     const entryTime = entry.timestamp.getTime();
     return (now - entryTime) < entry.ttl;
+  }
+
+  keys(): IterableIterator<string> {
+    return this.cache.keys();
   }
 
   // Get cache statistics
@@ -264,8 +269,8 @@ class EnhancedLockAPIService {
     ];
 
     patterns.forEach(pattern => {
-      Array.from(this.cache['cache'].keys()).forEach(key => {
-        if (key.includes(pattern)) {
+      Array.from(this.cache.keys()).forEach(key => {
+        if (typeof key === 'string' && key.includes(pattern)) {
           this.cache.delete(key);
         }
       });
@@ -401,8 +406,8 @@ class EnhancedLockAPIService {
   invalidateCache(pattern?: string): void {
     if (pattern) {
       // Invalidate specific pattern
-      Array.from(this.cache['cache'].keys()).forEach(key => {
-        if (key.includes(pattern)) {
+      Array.from(this.cache.keys()).forEach(key => {
+        if (typeof key === 'string' && key.includes(pattern)) {
           this.cache.delete(key);
         }
       });

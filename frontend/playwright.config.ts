@@ -43,7 +43,6 @@ export default defineConfig({
     actionTimeout: 10000,
     
     /* Maximum time each test can run. Defaults to 30 seconds. */
-    timeout: 60000,
   },
 
   /* Configure projects for major browsers */
@@ -111,12 +110,9 @@ export default defineConfig({
   
   /* Expect configuration */
   expect: {
-    /* Maximum time expect() should wait for the condition to be met. */
-    timeout: 10000,
-    
     /* Take screenshot on assertion failure */
     toHaveScreenshot: {
-      mode: 'only-on-failure'
+      threshold: 0.2
     }
   },
   

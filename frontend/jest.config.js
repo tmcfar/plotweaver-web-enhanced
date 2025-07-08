@@ -22,6 +22,9 @@ const customJestConfig = {
     '<rootDir>/__tests__/mode-sets/'
   ],
   moduleDirectories: ['node_modules', '<rootDir>/'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+  },
   testTimeout: 10000,
 }
 

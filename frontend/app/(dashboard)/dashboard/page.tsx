@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useUser } from '@clerk/nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,8 +17,28 @@ import {
 } from '@/components/design-system/icons'
 
 export default function DashboardPage() {
-  const { user } = useUser()
   const [showCreateWizard, setShowCreateWizard] = useState(false)
+  
+  // In development without Clerk, use a mock user
+  const isDevelopment = process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  let user = null;
+  
+  if (!isDevelopment) {
+    try {
+      const { useUser } = require('@clerk/nextjs');
+      const clerkUser = useUser();
+      user = clerkUser.user;
+    } catch {
+      // Clerk not available
+    }
+  } else {
+    // Mock user for development
+    user = {
+      firstName: 'Developer',
+      lastName: 'User',
+      email: 'dev@plotweaver.local'
+    };
+  }
 
   const handleCreateProject = () => {
     setShowCreateWizard(true)

@@ -3,6 +3,17 @@
  */
 
 import axios from 'axios';
+import type {
+  ConceptAnalysisRequest,
+  ConceptAnalysisResponse,
+  SetupProgress,
+  WorldbuildingStatus,
+  SetupPath,
+  SetupStepCompleteRequest,
+  AssumptionOverrideRequest
+} from '@/types/worldbuilding';
+import { worldbuildingApi } from './worldbuildingApi';
+import { bffApi } from './bffApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -229,6 +240,88 @@ export const api = {
     const response = await apiClient.get(`/api/progress/${projectId}`);
     return response.data;
   },
+
+  // Worldbuilding endpoints
+  worldbuilding: worldbuildingApi,
+
+  // Auth endpoints
+  auth: {
+    register: async (data: { email: string; password: string; name?: string }) => {
+      const response = await apiClient.post('/api/v1/auth/register', data);
+      return response.data;
+    },
+    login: async (data: { email: string; password: string }) => {
+      const response = await apiClient.post('/api/v1/auth/login', data);
+      return response.data;
+    },
+    logout: async () => {
+      const response = await apiClient.post('/api/v1/auth/logout');
+      return response.data;
+    },
+    refresh: async () => {
+      const response = await apiClient.post('/api/v1/auth/refresh');
+      return response.data;
+    },
+    getUser: async () => {
+      const response = await apiClient.get('/api/v1/auth/user');
+      return response.data;
+    },
+    updateUser: async (data: any) => {
+      const response = await apiClient.patch('/api/v1/auth/user', data);
+      return response.data;
+    },
+  },
+
+  // User profile endpoints
+  profile: {
+    get: async () => {
+      const response = await apiClient.get('/api/v1/user/profile');
+      return response.data;
+    },
+    update: async (data: any) => {
+      const response = await apiClient.patch('/api/v1/user/profile', data);
+      return response.data;
+    },
+    delete: async (data: { confirmation: string; password: string }) => {
+      const response = await apiClient.delete('/api/v1/user/profile', { data });
+      return response.data;
+    },
+  },
+
+  // Billing endpoints
+  billing: {
+    getSubscription: async () => {
+      const response = await apiClient.get('/api/v1/billing/subscription');
+      return response.data;
+    },
+    getUsage: async (params?: { start_date?: string; end_date?: string }) => {
+      const response = await apiClient.get('/api/v1/billing/usage', { params });
+      return response.data;
+    },
+    updatePaymentMethod: async (data: { stripe_payment_method_id: string; set_as_default?: boolean }) => {
+      const response = await apiClient.post('/api/v1/billing/payment-method', data);
+      return response.data;
+    },
+  },
+
+  // Project secrets endpoints
+  secrets: {
+    list: async (projectId: string) => {
+      const response = await apiClient.get(`/api/v1/projects/${projectId}/secrets`);
+      return response.data;
+    },
+    add: async (projectId: string, data: { key: string; value: string; description?: string }) => {
+      const response = await apiClient.post(`/api/v1/projects/${projectId}/secrets`, data);
+      return response.data;
+    },
+    delete: async (projectId: string, key: string) => {
+      const response = await apiClient.delete(`/api/v1/projects/${projectId}/secrets/${key}`);
+      return response.data;
+    },
+  },
+
+  // BFF endpoints (preview, git, enhanced locks, conflicts)
+  bff: bffApi,
 };
 
 export default api;

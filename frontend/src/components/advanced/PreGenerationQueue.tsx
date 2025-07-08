@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, X, ChevronUp, ChevronDown, Clock, CheckCircle, AlertCircle, Eye } from 'lucide-react';
-import { useNotifications } from '../notifications/NotificationProvider';
+import { useNotifications } from '../notifications/NotificationSystem';
 
 interface QueuedScene {
   id: string;
@@ -116,11 +116,7 @@ export const PreGenerationQueue: React.FC<PreGenerationQueueProps> = ({
     
     onQueueUpdate(updatedScenes);
     
-    addNotification({
-      type: 'info',
-      title: 'Queue Updated',
-      message: `Moved "${updatedScenes[newIndex].title}" ${direction} in queue`
-    });
+    addNotification('info', `Queue Updated: Moved "${updatedScenes[newIndex].title}" ${direction} in queue`);
   }, [queuedScenes, onQueueUpdate, addNotification]);
 
   const updatePriority = useCallback((sceneId: string, priority: QueuedScene['priority']) => {

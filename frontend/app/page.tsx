@@ -1,4 +1,3 @@
-import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,11 +5,25 @@ import Logo from '@/components/brand/Logo'
 import Link from 'next/link'
 
 export default function HomePage() {
-  const { userId } = auth()
-
-  // If user is signed in, redirect to dashboard
-  if (userId) {
-    redirect('/dashboard')
+  // In development without Clerk, skip auth check
+  const isDevelopment = process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  
+  if (!isDevelopment) {
+    // Only use Clerk auth if it's configured
+    try {
+      const { auth } = require('@clerk/nextjs/server');
+      const { userId } = auth();
+      
+      // If user is signed in, redirect to dashboard
+      if (userId) {
+        redirect('/dashboard')
+      }
+    } catch (error) {
+      // Clerk not available, continue to show homepage
+    }
+  } else {
+    // In development, check if we have a session cookie
+    // For now, let's just show the homepage
   }
 
   return (
@@ -28,12 +41,25 @@ export default function HomePage() {
             we've got you covered.
           </p>
           <div className="flex gap-4 justify-center">
-            <Button asChild size="lg">
-              <Link href="/sign-up">Start Writing</Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/sign-in">Sign In</Link>
-            </Button>
+            {isDevelopment ? (
+              <>
+                <Button asChild size="lg">
+                  <Link href="/dashboard">Go to Dashboard</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link href="/profile">User Profile</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild size="lg">
+                  <Link href="/sign-up">Start Writing</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
+                  <Link href="/sign-in">Sign In</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
@@ -140,9 +166,20 @@ export default function HomePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button asChild size="lg" className="w-full">
-                <Link href="/sign-up">Get Started for Free</Link>
-              </Button>
+              {isDevelopment ? (
+                <div className="space-y-2">
+                  <Button asChild size="lg" className="w-full">
+                    <Link href="/dashboard">Go to Dashboard</Link>
+                  </Button>
+                  <p className="text-sm text-muted-foreground">
+                    Development mode - authentication bypassed
+                  </p>
+                </div>
+              ) : (
+                <Button asChild size="lg" className="w-full">
+                  <Link href="/sign-up">Get Started for Free</Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

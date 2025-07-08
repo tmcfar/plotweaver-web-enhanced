@@ -10,9 +10,9 @@ const AgentProgressItemWrapper: FC<{ job: { id: string; agentName: string } }> =
 };
 
 export const AgentProgressPanel: FC = () => {
-  const { activeJobs } = useAgentQueue();
+  const { active, queue, completed } = useAgentQueue();
   
-  if (activeJobs.length === 0) {
+  if (!active && queue.length === 0) {
     return (
       <div className="agent-progress-panel p-4">
         <h3 className="font-semibold mb-3">Agent Progress</h3>
@@ -28,12 +28,18 @@ export const AgentProgressPanel: FC = () => {
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">Agent Progress</h3>
         <span className="text-sm text-gray-500">
-          {activeJobs.length} active job{activeJobs.length !== 1 ? 's' : ''}
+          {active ? 1 : 0} active job{active ? '' : 's'}
         </span>
       </div>
       
       <div className="space-y-3">
-        {activeJobs.map(job => (
+        {active && (
+          <AgentProgressItemWrapper
+            key={active.id}
+            job={active}
+          />
+        )}
+        {queue.map(job => (
           <AgentProgressItemWrapper
             key={job.id}
             job={job}

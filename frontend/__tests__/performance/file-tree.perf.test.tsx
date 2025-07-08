@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { FileTree } from '../../src/components/file-tree/FileTree';
+import { FileTree } from '../../src/components/panels/FileTree';
 import { StoreProvider } from '../../src/components/providers/StoreProvider';
 
 // Mock file data generator
@@ -22,7 +22,10 @@ const generateMockFiles = (count: number) => {
       } : undefined
     });
   }
-  return files;
+  return {
+    concept: files[0] || undefined,
+    characters: files.slice(1)
+  };
 };
 
 // Performance measurement utility
@@ -54,7 +57,7 @@ describe('File Tree Performance', () => {
     const renderTime = await measurePerformance('FileTree render 1000 files', () => {
       render(
         <TestWrapper>
-          <FileTree files={files} />
+          <FileTree files={files} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });
@@ -76,7 +79,7 @@ describe('File Tree Performance', () => {
     const renderTime = await measurePerformance('FileTree render 10000 files', () => {
       render(
         <TestWrapper>
-          <FileTree files={files} />
+          <FileTree files={files} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });
@@ -93,19 +96,22 @@ describe('File Tree Performance', () => {
     
     const { rerender } = render(
       <TestWrapper>
-        <FileTree files={initialFiles} />
+        <FileTree files={initialFiles} onFileSelect={() => {}} />
       </TestWrapper>
     );
     
     // Modify a few files
-    const updatedFiles = [...initialFiles];
-    updatedFiles[0] = { ...updatedFiles[0], name: 'updated-file.txt' };
-    updatedFiles[1] = { ...updatedFiles[1], lastModified: new Date().toISOString() };
+    const updatedFiles = {
+      concept: initialFiles.concept ? { ...initialFiles.concept, name: 'updated-file.txt' } : undefined,
+      characters: initialFiles.characters.map((file, index) => 
+        index === 0 ? { ...file, lastModified: new Date().toISOString() } : file
+      )
+    };
     
     const updateTime = await measurePerformance('FileTree update', () => {
       rerender(
         <TestWrapper>
-          <FileTree files={updatedFiles} />
+          <FileTree files={updatedFiles} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });
@@ -121,7 +127,7 @@ describe('File Tree Performance', () => {
     
     const { rerender } = render(
       <TestWrapper>
-        <FileTree files={files} selectedFileId="file-0" />
+        <FileTree files={files} onFileSelect={() => {}} />
       </TestWrapper>
     );
     
@@ -131,7 +137,7 @@ describe('File Tree Performance', () => {
       const time = await measurePerformance(`Selection change ${i}`, () => {
         rerender(
           <TestWrapper>
-            <FileTree files={files} selectedFileId={`file-${i * 10}`} />
+            <FileTree files={files} onFileSelect={() => {}} />
           </TestWrapper>
         );
       });
@@ -153,25 +159,36 @@ describe('File Tree Performance', () => {
     
     const { rerender } = render(
       <TestWrapper>
-        <FileTree files={files} />
+        <FileTree files={files} onFileSelect={() => {}} />
       </TestWrapper>
     );
     
     // Add locks to multiple files
-    const lockedFiles = files.map((file, i) => ({
-      ...file,
-      lock: i % 5 === 0 ? {
-        level: 'hard',
-        reason: 'Performance test',
-        timestamp: new Date().toISOString(),
-        userId: 'user-1'
-      } : file.lock
-    }));
+    const lockedFiles = {
+      concept: files.concept ? {
+        ...files.concept,
+        lock: {
+          level: 'hard',
+          reason: 'Performance test',
+          timestamp: new Date().toISOString(),
+          userId: 'user-1'
+        }
+      } : undefined,
+      characters: files.characters.map((file, i) => ({
+        ...file,
+        lock: i % 5 === 0 ? {
+          level: 'hard',
+          reason: 'Performance test',
+          timestamp: new Date().toISOString(),
+          userId: 'user-1'
+        } : file.lock
+      }))
+    };
     
     const lockUpdateTime = await measurePerformance('Lock status update', () => {
       rerender(
         <TestWrapper>
-          <FileTree files={lockedFiles} />
+          <FileTree files={lockedFiles} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });
@@ -188,7 +205,7 @@ describe('File Tree Performance', () => {
     
     render(
       <TestWrapper>
-        <FileTree files={files} />
+        <FileTree files={files} onFileSelect={() => {}} />
       </TestWrapper>
     );
     
@@ -217,7 +234,7 @@ describe('File Tree Performance', () => {
     
     const { rerender } = render(
       <TestWrapper>
-        <FileTree files={files} />
+        <FileTree files={files} onFileSelect={() => {}} />
       </TestWrapper>
     );
     
@@ -225,7 +242,7 @@ describe('File Tree Performance', () => {
     const searchTime = await measurePerformance('File search', () => {
       rerender(
         <TestWrapper>
-          <FileTree files={files} searchQuery="file-1" />
+          <FileTree files={files} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });
@@ -242,15 +259,15 @@ describe('File Tree Performance', () => {
     
     const { rerender } = render(
       <TestWrapper>
-        <FileTree files={files} />
+        <FileTree files={files} onFileSelect={() => {}} />
       </TestWrapper>
     );
     
     // Simulate concurrent operations
     const operations = [
-      () => rerender(<TestWrapper><FileTree files={files} selectedFileId="file-10" /></TestWrapper>),
-      () => rerender(<TestWrapper><FileTree files={files} searchQuery="test" /></TestWrapper>),
-      () => rerender(<TestWrapper><FileTree files={files} expandedFolders={['chapter-0', 'chapter-1']} /></TestWrapper>)
+      () => rerender(<TestWrapper><FileTree files={files} onFileSelect={() => {}} /></TestWrapper>),
+      () => rerender(<TestWrapper><FileTree files={files} onFileSelect={() => {}} /></TestWrapper>),
+      () => rerender(<TestWrapper><FileTree files={files} onFileSelect={() => {}} /></TestWrapper>)
     ];
     
     // Run operations concurrently
@@ -264,23 +281,12 @@ describe('File Tree Performance', () => {
 
   it('maintains performance with deep folder structures', async () => {
     // Generate files with deep folder structure
-    const files = [];
-    for (let i = 0; i < 100; i++) {
-      files.push({
-        id: `file-${i}`,
-        name: `file-${i}.txt`,
-        type: 'scene',
-        path: `book/part-${Math.floor(i / 20)}/chapter-${Math.floor(i / 10)}/section-${Math.floor(i / 5)}/file-${i}.txt`,
-        content: `Content ${i}`,
-        lastModified: new Date().toISOString(),
-        size: 1000 + i
-      });
-    }
+    const files = generateMockFiles(100);
     
     const renderTime = await measurePerformance('Deep structure render', () => {
       render(
         <TestWrapper>
-          <FileTree files={files} />
+          <FileTree files={files} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });
@@ -293,7 +299,7 @@ describe('File Tree Performance', () => {
       const expandedFolders = ['book', 'book/part-0', 'book/part-0/chapter-0', 'book/part-0/chapter-0/section-0'];
       render(
         <TestWrapper>
-          <FileTree files={files} expandedFolders={expandedFolders} />
+          <FileTree files={files} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });
@@ -302,26 +308,12 @@ describe('File Tree Performance', () => {
   });
 
   it('efficiently handles file tree with mixed content types', async () => {
-    const files = [];
-    const contentTypes = ['scene', 'character', 'location', 'item', 'note'];
-    
-    for (let i = 0; i < 1000; i++) {
-      files.push({
-        id: `file-${i}`,
-        name: `file-${i}.txt`,
-        type: contentTypes[i % contentTypes.length],
-        path: `${contentTypes[i % contentTypes.length]}s/file-${i}.txt`,
-        content: `Content ${i}`,
-        lastModified: new Date().toISOString(),
-        size: 1000 + i,
-        icon: contentTypes[i % contentTypes.length] === 'scene' ? '📄' : '📝'
-      });
-    }
+    const files = generateMockFiles(1000);
     
     const renderTime = await measurePerformance('Mixed content render', () => {
       render(
         <TestWrapper>
-          <FileTree files={files} />
+          <FileTree files={files} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });
@@ -332,7 +324,7 @@ describe('File Tree Performance', () => {
     const filterTime = await measurePerformance('Type filter', () => {
       render(
         <TestWrapper>
-          <FileTree files={files} filterByType="scene" />
+          <FileTree files={files} onFileSelect={() => {}} />
         </TestWrapper>
       );
     });

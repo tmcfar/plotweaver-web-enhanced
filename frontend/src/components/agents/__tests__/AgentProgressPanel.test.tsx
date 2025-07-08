@@ -16,12 +16,20 @@ const mockActiveJobs = [
   {
     id: 'job-1',
     agentName: 'Scene Generator',
-    status: 'running' as const
+    displayName: 'Scene Generator',
+    status: 'running' as const,
+    progress: 50,
+    createdAt: new Date(),
+    startedAt: new Date()
   },
   {
     id: 'job-2',
     agentName: 'Character Developer',
-    status: 'running' as const
+    displayName: 'Character Developer',
+    status: 'running' as const,
+    progress: 75,
+    createdAt: new Date(),
+    startedAt: new Date()
   }
 ];
 
@@ -32,9 +40,9 @@ describe('AgentProgressPanel', () => {
 
   it('shows empty state when no active jobs', () => {
     mockUseAgentQueue.mockReturnValue({
-      activeJobs: [],
-      queuedJobs: [],
-      completedJobs: [],
+      active: null,
+      queue: [],
+      completed: [],
       addJob: jest.fn(),
       removeJob: jest.fn(),
       clearCompleted: jest.fn()
@@ -48,9 +56,9 @@ describe('AgentProgressPanel', () => {
 
   it('displays active jobs with correct count', () => {
     mockUseAgentQueue.mockReturnValue({
-      activeJobs: mockActiveJobs,
-      queuedJobs: [],
-      completedJobs: [],
+      active: mockActiveJobs[0],
+      queue: mockActiveJobs.slice(1),
+      completed: [],
       addJob: jest.fn(),
       removeJob: jest.fn(),
       clearCompleted: jest.fn()
@@ -59,14 +67,14 @@ describe('AgentProgressPanel', () => {
     render(<AgentProgressPanel />);
     
     expect(screen.getByText('Agent Progress')).toBeInTheDocument();
-    expect(screen.getByText('2 active jobs')).toBeInTheDocument();
+    expect(screen.getByText('1 active job')).toBeInTheDocument();
   });
 
   it('displays singular text for single job', () => {
     mockUseAgentQueue.mockReturnValue({
-      activeJobs: [mockActiveJobs[0]],
-      queuedJobs: [],
-      completedJobs: [],
+      active: mockActiveJobs[0],
+      queue: [],
+      completed: [],
       addJob: jest.fn(),
       removeJob: jest.fn(),
       clearCompleted: jest.fn()

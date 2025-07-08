@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"node_modules/@tanstack/query-devtools/build/dev.js -> ./DevtoolsComponent/HH7B3BHX.js\":{\"id\":\"node_modules/@tanstack/query-devtools/build/dev.js -> ./DevtoolsComponent/HH7B3BHX.js\",\"files\":[\"static/chunks/vendors.js\"]},\"node_modules/@tanstack/query-devtools/build/dev.js -> ./DevtoolsPanelComponent/JZI2RDCT.js\":{\"id\":\"node_modules/@tanstack/query-devtools/build/dev.js -> ./DevtoolsPanelComponent/JZI2RDCT.js\",\"files\":[\"static/chunks/vendors.js\"]}}"
+self.__REACT_LOADABLE_MANIFEST="{}"

@@ -437,7 +437,7 @@ function ChangeItem({ change, currentUserId, onAccept, onReject, onView }: Chang
             </AvatarFallback>
           </Avatar>
           <span className="text-xs text-muted-foreground">
-            {change.authorName} • {formatTime(change.timestamp)}
+            {change.authorName} • {new Date(change.timestamp).toLocaleTimeString()}
           </span>
         </div>
 

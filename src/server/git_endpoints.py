@@ -27,7 +27,7 @@ git_manager = BFFGitManager(
 
 def setup_git_endpoints(app: FastAPI, manager):
     """Setup git endpoints on the FastAPI app."""
-    
+
     # Add startup event to initialize git repository
     @app.on_event("startup")
     async def startup_event():
@@ -152,7 +152,9 @@ def setup_git_endpoints(app: FastAPI, manager):
         payload = await request.body()
 
         # Verify signature
-        if not verify_github_signature(payload, x_hub_signature_256, GITHUB_WEBHOOK_SECRET):
+        if not verify_github_signature(
+            payload, x_hub_signature_256, GITHUB_WEBHOOK_SECRET
+        ):
             raise HTTPException(status_code=403, detail="Invalid signature")
 
         # Parse payload
@@ -191,7 +193,9 @@ def setup_git_endpoints(app: FastAPI, manager):
         return {"status": "ignored", "event": event_type}
 
     @app.post("/api/webhooks/gitlab")
-    async def handle_gitlab_webhook(request: Request, x_gitlab_token: str = Header(None)):
+    async def handle_gitlab_webhook(
+        request: Request, x_gitlab_token: str = Header(None)
+    ):
         """Handle GitLab webhook notifications."""
         if not GITLAB_WEBHOOK_TOKEN:
             raise HTTPException(status_code=403, detail="Webhook token not configured")
@@ -246,7 +250,8 @@ def setup_git_endpoints(app: FastAPI, manager):
         """
         # Broadcast to all clients subscribed to this project
         await manager.broadcast_to_project(
-            {"channel": f"agent_progress:{project_id}", "data": progress_data}, project_id
+            {"channel": f"agent_progress:{project_id}", "data": progress_data},
+            project_id,
         )
 
         # If generation completed, trigger cache invalidation

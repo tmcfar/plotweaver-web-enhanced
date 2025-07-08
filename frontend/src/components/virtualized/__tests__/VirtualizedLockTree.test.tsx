@@ -2,35 +2,35 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { VirtualizedLockTree } from '@/components/virtualized/VirtualizedLockTree';
-import { vi } from 'vitest';
-
-// Mock react-window
-vi.mock('react-window', () => ({
-  VariableSizeTree: ({ children, height, itemCount, itemSize, width }: any) => (
-    <div data-testid="virtual-tree" style={{ height, width }}>
-      {Array.from({ length: Math.min(itemCount, 10) }).map((_, index) => (
-        <div key={index} style={{ height: itemSize(index) }}>
-          {children({ index, style: {} })}
-        </div>
-      ))}
-    </div>
-  ),
-}));
-
-// Mock lock store
-vi.mock('@/hooks/useLockStore', () => ({
-  useLockStore: () => ({
-    locks: mockLocks,
-    toggleLock: vi.fn(),
-    updateLock: vi.fn(),
-  }),
-}));
 
 const mockLocks = {
   'node-1': { level: 'soft', reason: 'Initial lock' },
   'node-1-1': { level: 'hard', reason: 'Critical component' },
   'node-2-1': { level: 'frozen', reason: 'Finalized' },
 };
+
+// Mock lock store
+jest.mock('@/hooks/useLockStore', () => ({
+  useLockStore: () => ({
+    locks: mockLocks,
+    setLock: jest.fn(),
+    removeLock: jest.fn(),
+    clearLocks: jest.fn(),
+  }),
+}));
+
+// Mock react-window with a simpler approach
+jest.mock('react-window', () => ({
+  FixedSizeList: ({ children, height, itemCount, itemSize, width }: any) => (
+    <div data-testid="virtual-tree" style={{ height, width }}>
+      {Array.from({ length: Math.min(itemCount, 5) }).map((_, index) => (
+        <div key={index} data-testid={`tree-item-${index}`}>
+          Mock tree item {index}
+        </div>
+      ))}
+    </div>
+  ),
+}));
 
 // Generate large dataset for performance testing
 const generateLargeDataset = (count: number) => {
@@ -61,7 +61,7 @@ describe('VirtualizedLockTree', () => {
     items: generateLargeDataset(100),
     height: 600,
     width: 400,
-    onLockToggle: vi.fn(),
+    onLockToggle: jest.fn(),
   };
 
   it('renders virtualized tree structure', () => {
@@ -129,7 +129,7 @@ describe('VirtualizedLockTree', () => {
   });
 
   it('handles lock toggle with keyboard shortcut', async () => {
-    const onLockToggle = vi.fn();
+    const onLockToggle = jest.fn();
     const user = userEvent.setup();
     
     render(<VirtualizedLockTree {...defaultProps} onLockToggle={onLockToggle} />);
@@ -278,7 +278,7 @@ describe('VirtualizedLockTree', () => {
   });
 
   it('memoizes row rendering for performance', () => {
-    const renderSpy = vi.fn();
+    const renderSpy = jest.fn();
     const CustomRow = React.memo(({ data, index, style }: any) => {
       renderSpy(index);
       return <div style={style}>Item {index}</div>;

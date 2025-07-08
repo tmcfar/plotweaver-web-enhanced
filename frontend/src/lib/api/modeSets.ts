@@ -30,7 +30,12 @@ class ModeSetAPIService {
       // Return default for now
       return {
         currentModeSet: 'professional-writer',
-        preferences: {},
+        preferences: {
+          'professional-writer': {},
+          'ai-first': {},
+          'editor': {},
+          'hobbyist': {}
+        },
         lastChanged: new Date()
       };
     }

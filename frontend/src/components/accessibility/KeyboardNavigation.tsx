@@ -200,7 +200,7 @@ function getFocusableElements(container: HTMLElement | null): HTMLElement[] {
   const elements = container.querySelectorAll(focusableSelectors)
   return Array.from(elements).filter(
     element => !element.hasAttribute('hidden') && 
-               element.offsetParent !== null
+               (element as HTMLElement).offsetParent !== null
   ) as HTMLElement[]
 }
 
@@ -290,12 +290,13 @@ export function RovingTabIndex({
       {React.Children.map(children, (child, index) => {
         if (React.isValidElement(child)) {
           return React.cloneElement(child, {
+            ...child.props,
             tabIndex: index === focusedIndex ? 0 : -1,
             onFocus: () => {
               setFocusedIndex(index)
               onSelectionChange?.(index)
             }
-          })
+          } as any)
         }
         return child
       })}

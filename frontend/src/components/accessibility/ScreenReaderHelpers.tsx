@@ -66,7 +66,7 @@ export function AriaLiveRegion({
   children,
   politeness = 'polite',
   atomic = false,
-  relevant = 'additions text',
+  relevant = 'additions',
   busy = false,
   className
 }: AriaLiveRegionProps) {

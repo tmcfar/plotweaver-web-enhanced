@@ -49,6 +49,7 @@ export interface Comment {
     position?: { line: number; column: number }
     selectedText?: string
     type?: 'comment' | 'suggestion' | 'issue'
+    depth?: number
   }
 }
 

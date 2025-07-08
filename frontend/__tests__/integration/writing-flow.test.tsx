@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { StoreProvider } from '../../src/components/providers/StoreProvider';
-import { App } from '../../src/components/App';
+import App from '../../src/App';
 import { useStore } from '../../src/lib/store/createStore';
 import { sseManager } from '../../src/lib/sse/SSEConnectionManager';
 
@@ -31,6 +31,9 @@ global.localStorage = localStorageMock as any;
 const mockProject = {
   id: 'test-project',
   name: 'My Novel',
+  description: 'Test project',
+  createdAt: new Date(),
+  updatedAt: new Date(),
   chapters: [
     {
       id: 'chapter-1',
@@ -70,13 +73,13 @@ describe('Complete Writing Flow', () => {
     
     // Reset store state
     useStore.setState({
-      user: { id: 'test-user', name: 'Test User' },
+      user: { id: 'test-user', name: 'Test User', email: 'test@example.com', preferences: {} },
       currentProject: mockProject,
       modeSet: 'professional-writer',
-      files: [],
+      openFiles: [],
       locks: {},
-      agentQueue: [],
-      continuityIssues: []
+      queuedJobs: [],
+      continuityIssues: {}
     }, true);
     
     // Mock API responses
@@ -161,9 +164,9 @@ describe('Complete Writing Flow', () => {
     // Should show generated content
     expect(screen.getByText(/Elena stepped into the jazz club/)).toBeInTheDocument();
     
-    // Verify scene was added to project
+    // Verify scene was added to project (chapters are managed separately in the store)
     const state = useStore.getState();
-    expect(state.currentProject?.chapters[0].scenes[1].content).toContain('jazz club');
+    expect(state.openFiles.some(file => file.content.includes('jazz club'))).toBe(true);
   });
 
   it('handles continuity issues correctly', async () => {
@@ -271,9 +274,15 @@ describe('Complete Writing Flow', () => {
       }
     ];
     
-    // Add pre-generated scenes to store
+    // Add pre-generated scenes to store (store in agent queue for now)
     useStore.setState({ 
-      preGeneratedScenes 
+      queuedJobs: preGeneratedScenes.map(scene => ({
+        id: scene.id,
+        agentName: 'Scene Generator',
+        status: 'completed' as const,
+        result: scene,
+        createdAt: new Date()
+      }))
     });
     
     // Should show pre-generated options
@@ -301,10 +310,7 @@ describe('Complete Writing Flow', () => {
     
     // Mock collaborative context
     useStore.setState({
-      user: { id: 'user-1', name: 'User One' },
-      collaborators: [
-        { id: 'user-2', name: 'User Two', isActive: true }
-      ]
+      user: { id: 'user-1', name: 'User One', email: 'user1@example.com', preferences: {} }
     });
     
     render(
@@ -351,10 +357,19 @@ describe('Complete Writing Flow', () => {
     
     // Simulate another user trying to edit
     const otherUserEdit = {
-      userId: 'user-2',
-      action: 'edit',
-      fileId: 'scene-1',
-      content: 'Different content'
+      id: 'conflict-1',
+      componentId: 'scene-1',
+      requestedBy: 'user-2',
+      currentLock: {
+        componentId: 'scene-1',
+        componentType: 'scene',
+        level: 'soft' as const,
+        lockedBy: 'user-1',
+        lockedAt: new Date().toISOString(),
+        reason: 'Editing'
+      },
+      conflictType: 'write' as const,
+      timestamp: new Date().toISOString()
     };
     
     // Should show conflict notification

@@ -130,14 +130,28 @@ function trackModeSetChange(newMode: StoreState['modeSet'], previousMode?: Store
 }
 
 // Debounced lock saving to prevent excessive Git operations
-let saveLockTimer: number;
+let saveLockTimer: NodeJS.Timeout;
 function debouncedSaveLocks(locks: StoreState['locks']) {
   clearTimeout(saveLockTimer);
   saveLockTimer = setTimeout(() => {
     try {
       // TODO: Get actual repo path from project state
       const repoPath = '.'; // Default to current directory
-      gitManager.saveLocks(repoPath, locks);
+      // Convert to API format for saving
+      const apiLocks: Record<string, import('../../api/locks').ComponentLock> = {};
+      Object.entries(locks).forEach(([key, lock]) => {
+        apiLocks[key] = {
+          id: lock.componentId,
+          componentId: lock.componentId,
+          type: 'personal',
+          level: lock.level,
+          reason: lock.reason || '',
+          lockedBy: lock.lockedBy,
+          lockedAt: new Date(lock.lockedAt),
+          canOverride: false
+        };
+      });
+      gitManager.saveLocks(repoPath, apiLocks);
     } catch (error) {
       console.error('Failed to save locks to Git:', error);
     }

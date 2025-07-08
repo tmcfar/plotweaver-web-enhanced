@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { WifiOff, Cloud, CloudOff, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';

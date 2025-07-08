@@ -22,7 +22,7 @@ describe('AgentQueue', () => {
   };
 
   beforeEach(() => {
-    (useGlobalStore as jest.Mock).mockReturnValue({
+    (useGlobalStore as unknown as jest.Mock).mockReturnValue({
       modeSet: 'professional-writer'
     });
 
@@ -42,7 +42,7 @@ describe('AgentQueue', () => {
   });
 
   it('renders simplified view for hobbyist mode', () => {
-    (useGlobalStore as jest.Mock).mockReturnValue({
+    (useGlobalStore as unknown as jest.Mock).mockReturnValue({
       modeSet: 'hobbyist'
     });
 

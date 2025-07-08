@@ -18,8 +18,12 @@ from ..auth.jwt_auth import websocket_auth_manager
 from ..auth.rate_limiter import rate_limiter
 from .constants import MAX_CONNECTIONS, MAX_MESSAGE_SIZE, HEARTBEAT_TIMEOUT
 from .bounded_collections import BoundedDict, BoundedSet
+from .worldbuilding_endpoints import router as worldbuilding_router
 
 app = FastAPI(title="PlotWeaver Web Enhanced")
+
+# Include routers
+app.include_router(worldbuilding_router)
 
 app.add_middleware(
     CORSMiddleware,

@@ -12,7 +12,10 @@ const localStorageMock = {
   removeItem: jest.fn(),
   clear: jest.fn(),
 };
-(globalThis as { localStorage: typeof localStorageMock }).localStorage = localStorageMock;
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true
+});
 
 // Test wrapper with store provider
 function TestWrapper({ children }: { children: React.ReactNode }) {
@@ -70,7 +73,7 @@ describe('Mode-Set Switching', () => {
     render(
       <TestWrapper>
         <ModeSetCard
-          modeSet="ai-first"
+          id="ai-first"
           title="AI-First"
           description="AI-powered writing"
           features={['Auto-generation', 'Smart suggestions']}

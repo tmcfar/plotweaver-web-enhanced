@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Editor } from '../../src/components/editors/Editor';
+import { Editor } from '../../src/components/mode-sets/ModeSetDashboard/Editor';
 import { StoreProvider } from '../../src/components/providers/StoreProvider';
 import { useStore } from '../../src/lib/store/createStore';
 import { LockLevel } from '../../src/types/locks';
@@ -26,10 +26,7 @@ describe('Lock Enforcement', () => {
     jest.clearAllMocks();
     // Reset store state
     useStore.setState({
-      locks: {},
-      currentFile: null,
-      lockDialogOpen: false,
-      confirmEditDialog: null
+      locks: {}
     }, true);
   });
 
@@ -45,7 +42,7 @@ describe('Lock Enforcement', () => {
     
     render(
       <TestWrapper>
-        <Editor file={frozenFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -78,7 +75,7 @@ describe('Lock Enforcement', () => {
     
     render(
       <TestWrapper>
-        <Editor file={hardLockedFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -114,7 +111,7 @@ describe('Lock Enforcement', () => {
     
     render(
       <TestWrapper>
-        <Editor file={hardLockedFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -155,7 +152,7 @@ describe('Lock Enforcement', () => {
     
     render(
       <TestWrapper>
-        <Editor file={hardLockedFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -194,7 +191,7 @@ describe('Lock Enforcement', () => {
     
     render(
       <TestWrapper>
-        <Editor file={softLockedFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -223,7 +220,7 @@ describe('Lock Enforcement', () => {
     
     render(
       <TestWrapper>
-        <Editor file={softLockedFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -272,9 +269,8 @@ describe('Lock Enforcement', () => {
     // Mock FileTree component would be imported here
     // For now, we'll test the store logic
     
-    // Set files in store
+    // Set locks in store (files are handled separately)
     useStore.setState({ 
-      files,
       locks: {
         'file-1': files[0].lock,
         'file-2': files[1].lock,
@@ -312,13 +308,13 @@ describe('Lock Enforcement', () => {
     
     // Set current user
     useStore.setState({ 
-      user: { id: 'current-user', name: 'Current User' } 
+      user: { id: 'current-user', name: 'Current User', email: 'user@example.com', preferences: {} } 
     });
     
     // Test user's own lock (should allow editing)
     render(
       <TestWrapper>
-        <Editor file={userLockedFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -328,7 +324,7 @@ describe('Lock Enforcement', () => {
     // Test other user's lock (should require confirmation)
     render(
       <TestWrapper>
-        <Editor file={otherLockedFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -352,7 +348,7 @@ describe('Lock Enforcement', () => {
     
     render(
       <TestWrapper>
-        <Editor file={expiredLockFile} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     

@@ -325,6 +325,7 @@ export const useNotifications = () => {
   };
 
   return {
+    addNotification,
     notifyLockUpdate,
     notifyConflict,
     notifySuccess,

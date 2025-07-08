@@ -4,10 +4,10 @@ import userEvent from '@testing-library/user-event';
 import { ContextBuilder } from '@/components/advanced/ContextBuilder';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
-import { vi } from 'vitest';
+// Using Jest mocks
 
 // Mock drag and drop
-vi.mock('@hello-pangea/dnd', () => ({
+jest.mock('@hello-pangea/dnd', () => ({
   DragDropContext: ({ children, onDragEnd }: any) => (
     <div data-testid="drag-context" onClick={() => onDragEnd({
       source: { droppableId: 'available', index: 0 },
@@ -30,15 +30,20 @@ vi.mock('@hello-pangea/dnd', () => ({
 }));
 
 // Mock API
-vi.mock('@/lib/api/context', () => ({
-  fetchAvailableComponents: vi.fn(),
-  validateContext: vi.fn(),
-  suggestComponents: vi.fn(),
-  buildContext: vi.fn(),
+const mockFetchAvailableComponents = jest.fn();
+const mockValidateContext = jest.fn();
+const mockSuggestComponents = jest.fn();
+const mockBuildContext = jest.fn();
+
+jest.mock('@/lib/api/context', () => ({
+  fetchAvailableComponents: mockFetchAvailableComponents,
+  validateContext: mockValidateContext,
+  suggestComponents: mockSuggestComponents,
+  buildContext: mockBuildContext,
 }));
 
 // Mock hooks
-vi.mock('@/hooks/useLockStore', () => ({
+jest.mock('@/hooks/useLockStore', () => ({
   useLockStore: () => ({
     locks: {
       'component-1': { level: 'soft', reason: 'Test lock' },
@@ -84,13 +89,19 @@ describe('ContextBuilder', () => {
       },
     });
 
-    vi.mocked(fetchAvailableComponents).mockResolvedValue(mockComponents);
+    mockFetchAvailableComponents.mockResolvedValue(mockComponents);
   });
 
   const renderComponent = () => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <ContextBuilder projectId="test-project" sceneId="test-scene" />
+        <ContextBuilder 
+          sceneId="test-scene" 
+          availableComponents={[]}
+          currentContext={[]}
+          onContextUpdate={() => {}}
+          onLockValidation={async () => ({ valid: true, issues: [], suggestions: [], estimatedTokens: 0 })}
+        />
       </QueryClientProvider>
     );
   };
@@ -181,11 +192,11 @@ describe('ContextBuilder', () => {
   });
 
   it('validates context with locked components', async () => {
-    const mockValidate = vi.fn().mockResolvedValue({
+    const mockValidate = jest.fn().mockResolvedValue({
       isValid: false,
       issues: ['Missing required plot component'],
     });
-    vi.mocked(validateContext).mockImplementation(mockValidate);
+    mockValidateContext.mockImplementation(mockValidate);
 
     const user = userEvent.setup();
     renderComponent();
@@ -206,7 +217,7 @@ describe('ContextBuilder', () => {
     const mockSuggestions = [
       { componentId: 'component-2', reason: 'Essential for scene continuity' },
     ];
-    vi.mocked(suggestComponents).mockResolvedValue(mockSuggestions);
+    mockSuggestComponents.mockResolvedValue(mockSuggestions);
 
     const user = userEvent.setup();
     renderComponent();
@@ -271,11 +282,11 @@ describe('ContextBuilder', () => {
   });
 
   it('builds final context', async () => {
-    const mockBuild = vi.fn().mockResolvedValue({
+    const mockBuild = jest.fn().mockResolvedValue({
       context: 'Built context content',
       tokenCount: 1500,
     });
-    vi.mocked(buildContext).mockImplementation(mockBuild);
+    mockBuildContext.mockImplementation(mockBuild);
 
     const user = userEvent.setup();
     renderComponent();
@@ -294,7 +305,7 @@ describe('ContextBuilder', () => {
   });
 
   it('handles errors gracefully', async () => {
-    vi.mocked(fetchAvailableComponents).mockRejectedValueOnce(
+    mockFetchAvailableComponents.mockRejectedValueOnce(
       new Error('Failed to load components')
     );
 
@@ -313,7 +324,7 @@ describe('ContextBuilder', () => {
   });
 
   it('displays empty state when no components available', async () => {
-    vi.mocked(fetchAvailableComponents).mockResolvedValueOnce([]);
+    mockFetchAvailableComponents.mockResolvedValueOnce([]);
 
     renderComponent();
 

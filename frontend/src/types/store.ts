@@ -29,11 +29,13 @@ export interface OpenFile {
 export interface AgentJob {
   id: string;
   agentName: string;
+  displayName: string;
   status: 'queued' | 'running' | 'completed' | 'error';
-  progress?: number;
+  progress: number;
   result?: Record<string, unknown>;
   error?: string;
   createdAt: Date;
+  startedAt: Date;
   completedAt?: Date;
 }
 
@@ -44,8 +46,8 @@ export interface Preferences {
 }
 
 // StateCreator type for Zustand slices
-export type StateCreator<T, U = T> = (
+export type StateCreator<T> = (
   set: (fn: (state: T) => Partial<T>) => void,
   get: () => T,
   api: unknown
-) => U;
+) => T;

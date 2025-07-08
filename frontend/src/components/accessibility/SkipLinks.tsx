@@ -321,7 +321,7 @@ export function BreadcrumbSkip({
   items,
   className
 }: BreadcrumbSkipProps) {
-  const handleSkipTo = (item: { href?: string; targetId?: string }) => {
+  const handleSkipTo = (item: { label: string; href?: string; targetId?: string }) => {
     if (item.targetId) {
       const target = document.getElementById(item.targetId)
       if (target) {

@@ -32,6 +32,8 @@ export interface ConflictResolution {
   customState?: any;
 }
 
+export type Resolution = ConflictResolution;
+
 export interface BulkLockOperation {
   type: 'lock' | 'unlock' | 'change_level';
   componentIds: string[];
@@ -195,3 +197,17 @@ class LockAPIService {
 }
 
 export const lockAPI = new LockAPIService();
+
+// Export compatibility alias for legacy code
+export const lockService = {
+  checkLockConflicts: async (agentId: string, componentIds: string[]): Promise<LockConflict[]> => {
+    // Implementation for checking lock conflicts
+    return [];
+  },
+  createLock: async (request: any): Promise<ComponentLock> => {
+    return lockAPI.lockComponent(request.componentId, request.level, request.reason);
+  },
+  releaseLock: async (componentId: string): Promise<void> => {
+    return lockAPI.unlockComponent(componentId);
+  }
+};

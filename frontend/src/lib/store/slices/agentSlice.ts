@@ -10,7 +10,7 @@ export interface AgentSlice {
   addJob: (job: Omit<AgentJob, 'id' | 'createdAt'>) => string;
   startJob: (jobId: string) => void;
   updateJobProgress: (jobId: string, progress: number) => void;
-  completeJob: (jobId: string, result: unknown) => void;
+  completeJob: (jobId: string, result: Record<string, unknown>) => void;
   failJob: (jobId: string, error: string) => void;
   cancelJob: (jobId: string) => void;
   removeJob: (jobId: string) => void;

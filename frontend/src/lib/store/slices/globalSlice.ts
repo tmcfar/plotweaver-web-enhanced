@@ -35,11 +35,16 @@ export interface GlobalSlice {
   isAIFirstMode: () => boolean;
 }
 
-export const createGlobalSlice: StateCreator<GlobalSlice, [], [], GlobalSlice> = (set, get) => ({
+export const createGlobalSlice: StateCreator<GlobalSlice> = (set, get) => ({
   // Initial state
   user: null,
   modeSet: 'professional-writer',
-  modeSetPreferences: {},
+  modeSetPreferences: {
+    'professional-writer': {},
+    'ai-first': {},
+    'editor': {},
+    'hobbyist': {}
+  },
   currentProject: null,
   writingMode: { primary: 'discovery' },
   sidebarCollapsed: false,

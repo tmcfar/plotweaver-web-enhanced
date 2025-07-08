@@ -1,4 +1,5 @@
 import { StateCreator } from '../../../types/store';
+import { ComponentLock as APIComponentLock, LockConflict as APILockConflict } from '../../api/locks';
 import { ComponentLock, LockLevel, LockConflict, CreateLockRequest } from '../../../types/locks';
 import { lockService } from '../../api/locks';
 
@@ -23,7 +24,7 @@ export interface LockSlice {
   hasConflicts: () => boolean;
 }
 
-export const createLockSlice: StateCreator<LockSlice, [], [], LockSlice> = (set, get) => ({
+export const createLockSlice: StateCreator<LockSlice> = (set, get) => ({
   // Initial state
   locks: {},
   lockConflicts: [],

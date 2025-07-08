@@ -3,8 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, Lock, Unlock, ArrowRight } from 'lucide-react';
-import { useLockStore } from '../../store/lockStore';
-import { useNotifications } from '../notifications/NotificationProvider';
+import { useLockStore } from '../../lib/store/lockStore';
+import { useNotifications } from '../notifications/NotificationSystem';
 
 interface ComponentStatus {
   id: string;
@@ -113,25 +113,11 @@ export const FoundationCheckpoint: React.FC<FoundationCheckpointProps> = ({
 
     try {
       onComponentLock(selectedComponents, lockLevel);
-      addNotification({
-        type: 'success',
-        title: 'Components Locked',
-        message: `${selectedComponents.length} components locked at ${lockLevel} level`,
-        actions: [
-          {
-            label: 'View Locks',
-            action: () => console.log('Navigate to lock management')
-          }
-        ]
-      });
+      addNotification('success', `Components Locked: ${selectedComponents.length} components locked at ${lockLevel} level`);
       setSelectedComponents([]);
       await fetchFoundationStatus();
     } catch (error) {
-      addNotification({
-        type: 'error',
-        title: 'Lock Failed',
-        message: 'Failed to lock selected components'
-      });
+      addNotification('error', 'Lock Failed: Failed to lock selected components');
     }
   };
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Editor } from '../../src/components/editors/Editor';
+import { Editor } from '../../src/components/mode-sets/ModeSetDashboard/Editor';
 import { StoreProvider } from '../../src/components/providers/StoreProvider';
 
 // Large document generator
@@ -70,7 +70,7 @@ describe('Editor Performance', () => {
     const renderTime = await measurePerformance('Large document render', () => {
       render(
         <TestWrapper>
-          <Editor file={file} />
+          <Editor projectId="test-project" />
         </TestWrapper>
       );
     });
@@ -99,7 +99,7 @@ describe('Editor Performance', () => {
     
     render(
       <TestWrapper>
-        <Editor file={file} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -130,7 +130,7 @@ describe('Editor Performance', () => {
     
     render(
       <TestWrapper>
-        <Editor file={file} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -159,7 +159,7 @@ describe('Editor Performance', () => {
     
     render(
       <TestWrapper>
-        <Editor file={file} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -205,7 +205,7 @@ describe('Editor Performance', () => {
     
     render(
       <TestWrapper>
-        <Editor file={file} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -263,7 +263,7 @@ describe('Editor Performance', () => {
     const renderTime = await measurePerformance('Syntax highlighting render', () => {
       render(
         <TestWrapper>
-          <Editor file={file} />
+          <Editor projectId="test-project" />
         </TestWrapper>
       );
     });
@@ -283,7 +283,7 @@ describe('Editor Performance', () => {
     
     const { rerender } = render(
       <TestWrapper>
-        <Editor file={file} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -300,7 +300,7 @@ describe('Editor Performance', () => {
         const updatedFile = { ...file, content: collaborativeUpdates[i] };
         rerender(
           <TestWrapper>
-            <Editor file={updatedFile} />
+            <Editor projectId="test-project" />
           </TestWrapper>
         );
       });
@@ -329,7 +329,7 @@ describe('Editor Performance', () => {
     
     render(
       <TestWrapper>
-        <Editor file={file} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -365,7 +365,7 @@ describe('Editor Performance', () => {
     
     render(
       <TestWrapper>
-        <Editor file={file} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -402,7 +402,7 @@ describe('Editor Performance', () => {
     
     render(
       <TestWrapper>
-        <Editor file={file} autoSave={true} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     
@@ -431,7 +431,7 @@ describe('Editor Performance', () => {
     
     render(
       <TestWrapper>
-        <Editor file={file} />
+        <Editor projectId="test-project" />
       </TestWrapper>
     );
     

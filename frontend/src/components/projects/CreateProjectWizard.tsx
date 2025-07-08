@@ -26,6 +26,7 @@ import { WritingIcon, AIIcon, CollaborationIcon, ProgressIcon } from '@/componen
 import { useCreateProject, useProjectTemplates } from '@/hooks/useProjects'
 import { InlineLoading } from '@/components/design-system/loading-states'
 import type { Project, ProjectTemplate, CreateProjectRequest } from '@/types/project'
+import { SetupWizard } from '@/components/worldbuilding'
 
 interface CreateProjectWizardProps {
   open: boolean
@@ -111,6 +112,8 @@ export function CreateProjectWizard({ open, onOpenChange }: CreateProjectWizardP
   const router = useRouter()
   const [step, setStep] = useState(0)
   const [formData, setFormData] = useState<FormData>(initialFormData)
+  const [createdProject, setCreatedProject] = useState<Project | null>(null)
+  const [showWorldbuilding, setShowWorldbuilding] = useState(false)
   
   const { data: templates = [] } = useProjectTemplates()
   const createProject = useCreateProject()
@@ -136,6 +139,21 @@ export function CreateProjectWizard({ open, onOpenChange }: CreateProjectWizardP
     }
   }
 
+  const handleWorldbuildingComplete = () => {
+    if (createdProject) {
+      onOpenChange(false)
+      setStep(0)
+      setFormData(initialFormData)
+      setCreatedProject(null)
+      setShowWorldbuilding(false)
+      router.push(`/projects/${createdProject.id}`)
+    }
+  }
+
+  const handleSkipWorldbuilding = () => {
+    handleWorldbuildingComplete()
+  }
+
   const handleCreate = async () => {
     const projectData: CreateProjectRequest = {
       title: formData.title,
@@ -149,10 +167,8 @@ export function CreateProjectWizard({ open, onOpenChange }: CreateProjectWizardP
 
     createProject.mutate(projectData, {
       onSuccess: (project) => {
-        onOpenChange(false)
-        setStep(0)
-        setFormData(initialFormData)
-        router.push(`/projects/${project.id}`)
+        setCreatedProject(project)
+        setShowWorldbuilding(true)
       }
     })
   }
@@ -300,17 +316,17 @@ export function CreateProjectWizard({ open, onOpenChange }: CreateProjectWizardP
                 <div>
                   <label className="text-sm font-medium">Template (Optional)</label>
                   <Select 
-                    value={formData.templateId || ''} 
+                    value={formData.templateId || 'none'} 
                     onValueChange={(value) => setFormData(prev => ({ 
                       ...prev, 
-                      templateId: value || undefined 
+                      templateId: value === 'none' ? undefined : value 
                     }))}
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Choose a template" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No template</SelectItem>
+                      <SelectItem value="none">No template</SelectItem>
                       {templates.map((template) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
@@ -379,6 +395,33 @@ export function CreateProjectWizard({ open, onOpenChange }: CreateProjectWizardP
       default:
         return null
     }
+  }
+
+  // If we're showing worldbuilding setup, render that instead
+  if (showWorldbuilding && createdProject) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Set Up Your Story World</DialogTitle>
+            <DialogDescription>
+              Let's configure your story's worldbuilding. You can skip this and set it up later.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <SetupWizard 
+            projectPath={createdProject.path || createdProject.id}
+            onComplete={handleWorldbuildingComplete}
+          />
+          
+          <div className="flex justify-end mt-4">
+            <Button variant="ghost" onClick={handleSkipWorldbuilding}>
+              Skip for now
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
   }
 
   return (

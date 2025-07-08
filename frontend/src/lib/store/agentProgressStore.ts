@@ -1,15 +1,8 @@
 import { create } from 'zustand';
+import { AgentJob } from '../../types/store';
 
-export interface AgentJob {
-  id: string;
-  displayName: string;
+export interface AgentJobWithTask extends AgentJob {
   currentTask?: string;
-  progress: number;
-  status: 'queued' | 'running' | 'completed' | 'error';
-  result?: unknown;
-  error?: string;
-  startedAt: Date;
-  completedAt?: Date;
 }
 
 export interface AgentProgress {
@@ -21,11 +14,11 @@ export interface AgentProgress {
 }
 
 interface AgentProgressState {
-  activeJobs: Map<string, AgentJob>;
-  queuedJobs: AgentJob[];
-  completedJobs: AgentJob[];
+  activeJobs: Map<string, AgentJobWithTask>;
+  queuedJobs: AgentJobWithTask[];
+  completedJobs: AgentJobWithTask[];
   updateProgress: (jobId: string, progress: AgentProgress) => void;
-  addToQueue: (job: AgentJob) => void;
+  addToQueue: (job: AgentJobWithTask) => void;
   markComplete: (jobId: string, result: unknown) => void;
   markError: (jobId: string, error: string) => void;
   cancelJob: (jobId: string) => void;

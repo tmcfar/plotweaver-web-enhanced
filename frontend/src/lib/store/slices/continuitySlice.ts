@@ -25,7 +25,7 @@ export interface ContinuitySlice {
   isSceneChecking: (sceneId: string) => boolean;
 }
 
-export const createContinuitySlice: StateCreator<ContinuitySlice, [], [], ContinuitySlice> = (set, get) => ({
+export const createContinuitySlice: StateCreator<ContinuitySlice> = (set, get) => ({
   // Initial state
   continuityIssues: {},
   isChecking: {},
@@ -97,7 +97,7 @@ export const createContinuitySlice: StateCreator<ContinuitySlice, [], [], Contin
   getIssuesBySeverity: (severity) => {
     const state = get();
     const allIssues = Object.values(state.continuityIssues).flat();
-    return allIssues.filter(issue => issue.severity === severity);
+    return allIssues.filter(issue => (issue as ContinuityIssue).severity === severity);
   },
 
   getTotalIssueCount: () => {
@@ -108,7 +108,7 @@ export const createContinuitySlice: StateCreator<ContinuitySlice, [], [], Contin
   getHighPriorityIssues: () => {
     const state = get();
     const allIssues = Object.values(state.continuityIssues).flat();
-    return allIssues.filter(issue => issue.severity === 'high');
+    return allIssues.filter(issue => (issue as ContinuityIssue).severity === 'high');
   },
 
   isSceneChecking: (sceneId) => {

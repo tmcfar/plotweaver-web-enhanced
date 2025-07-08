@@ -19,12 +19,16 @@ interface ThemeProviderProps {
   children: React.ReactNode
   defaultTheme?: Theme
   storageKey?: string
+  enableSystem?: boolean
+  disableTransitionOnChange?: boolean
 }
 
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
   storageKey = 'plotweaver-theme',
+  enableSystem = true,
+  disableTransitionOnChange = false,
 }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(defaultTheme)
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>('light')

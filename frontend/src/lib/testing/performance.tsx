@@ -1,6 +1,7 @@
 // Performance testing utilities
+import React from 'react'
 import { render, screen } from '@testing-library/react'
-import { act } from 'react'
+import { act } from '@testing-library/react'
 
 // Performance metrics interface
 interface PerformanceMetrics {
@@ -282,7 +283,7 @@ export async function testCoreWebVitals(
     disconnect: () => null
   }))
   
-  window.PerformanceObserver = mockPerformanceObserver
+  (window as any).PerformanceObserver = mockPerformanceObserver as any
   
   const startTime = performance.now()
   render(component)
@@ -389,14 +390,3 @@ export const performanceMatchers = {
   }
 }
 
-// Export performance test utilities
-export {
-  testRenderPerformance,
-  testReRenderPerformance,
-  testVirtualizationPerformance,
-  testLazyLoadingPerformance,
-  testMemoryLeaks,
-  testCoreWebVitals,
-  analyzeBundleSize,
-  PerformanceTestSuite
-}

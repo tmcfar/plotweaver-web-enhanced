@@ -1,5 +1,6 @@
+'use client';
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import * as Sentry from '@sentry/nextjs';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,13 +44,18 @@ export class GlobalErrorBoundary extends Component<Props, State> {
       console.error('Error caught by boundary:', error, errorInfo);
     }
 
-    // Send to Sentry in production
-    Sentry.withScope((scope) => {
-      scope.setContext('errorBoundary', {
-        componentStack: errorInfo.componentStack,
+    // Send to Sentry in production if available
+    try {
+      const Sentry = require('@sentry/nextjs');
+      Sentry.withScope((scope: any) => {
+        scope.setContext('errorBoundary', {
+          componentStack: errorInfo.componentStack,
+        });
+        Sentry.captureException(error);
       });
-      Sentry.captureException(error);
-    });
+    } catch {
+      // Sentry not available
+    }
 
     this.setState({
       errorInfo,
@@ -186,25 +192,17 @@ export function ComponentErrorBoundary({
   );
 }
 
-// Async error boundary for handling promise rejections
-export function AsyncErrorBoundary({ children }: { children: ReactNode }) {
-  const [error, setError] = React.useState<Error | null>(null);
-
-  React.useEffect(() => {
+// Simple async error boundary that doesn't use hooks
+export class AsyncErrorBoundary extends Component<{ children: ReactNode }> {
+  componentDidMount() {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      setError(new Error(event.reason));
+      console.error('Unhandled promise rejection:', event.reason);
     };
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
-
-  if (error) {
-    throw error;
   }
 
-  return <>{children}</>;
+  render() {
+    return this.props.children;
+  }
 }

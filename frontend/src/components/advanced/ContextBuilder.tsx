@@ -4,8 +4,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Search, Plus, X, AlertTriangle, CheckCircle, Eye, Lightbulb } from 'lucide-react';
-import { useLockStore } from '../../store/lockStore';
-import { useNotifications } from '../notifications/NotificationProvider';
+import { useLockStore } from '../../lib/store/lockStore';
+import { useNotifications } from '../notifications/NotificationSystem';
 
 interface ProjectComponent {
   id: string;
@@ -104,11 +104,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
       setValidation(result);
     } catch (error) {
       console.error('Validation failed:', error);
-      addNotification({
-        type: 'error',
-        title: 'Validation Failed',
-        message: 'Could not validate context constraints'
-      });
+      addNotification('error', 'Validation Failed: Could not validate context constraints');
     } finally {
       setIsValidating(false);
     }
@@ -146,11 +142,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
     setContext(updatedContext);
     onContextUpdate(updatedContext);
 
-    addNotification({
-      type: 'success',
-      title: 'Component Added',
-      message: `${component.name} added to scene context`
-    });
+    addNotification('success', `Component Added: ${component.name} added to scene context`);
   }, [context, onContextUpdate, addNotification]);
 
   const removeFromContext = useCallback((contextItemId: string) => {
