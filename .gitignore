@@ -5,9 +5,11 @@ frontend/node_modules/
 *.pyc
 __pycache__/
 .coverage
+.coverage.*
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+venv/
 
 # Environment files
 .env
@@ -23,15 +25,18 @@ dist/
 build/
 frontend/dist/
 frontend/build/
+frontend/.next/
+frontend/out/
 *.egg-info/
 .venv/
 
 # IDE files
-.vscode/settings.json
+.vscode/
 .idea/
 *.swp
 *.swo
 *~
+*.code-workspace
 
 # OS files
 .DS_Store
@@ -46,6 +51,7 @@ Thumbs.db
 *.log
 logs/
 frontend/logs/
+websocket.log
 
 # Test results
 test-results/
@@ -53,6 +59,7 @@ frontend/test-results/
 coverage/
 frontend/coverage/
 .nyc_output/
+htmlcov/
 
 # Docker
 .dockerignore
@@ -62,10 +69,12 @@ frontend/coverage/
 *.temp
 temp/
 tmp/
+.tmp
 
 # Build artifacts
 *.tsbuildinfo
 frontend/*.tsbuildinfo
+node_modules/.cache/
 
 # Playwright
 frontend/test-results/
@@ -74,3 +83,35 @@ frontend/playwright/.cache/
 
 # Monitoring
 sentry.properties
+
+# Security reports
+security_report.json
+security_*.json
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Test files
+test_*.py
+!tests/test_*.py
+example_*.py
+check_*.py
+
+# Documentation
+WEEK*.md
+week*.md
+*_COMPLETE.md
+*_IMPLEMENTATION.md
+*_INTEGRATION.md
+*_REPORT.md
+foundation-test.md
+
+# Session examples
+session_config_example.py
+
+# Scripts
+make_*_executable.sh
+commit-*.sh
+fix-*.sh

@@ -410,7 +410,7 @@ export function CreateProjectWizard({ open, onOpenChange }: CreateProjectWizardP
           </DialogHeader>
           
           <SetupWizard 
-            projectPath={createdProject.path || createdProject.id}
+            projectPath={createdProject.git_repo_path || createdProject.id.toString()}
             onComplete={handleWorldbuildingComplete}
           />
           

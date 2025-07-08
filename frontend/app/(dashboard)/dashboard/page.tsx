@@ -16,29 +16,38 @@ import {
   CollaborationIcon
 } from '@/components/design-system/icons'
 
-export default function DashboardPage() {
-  const [showCreateWizard, setShowCreateWizard] = useState(false)
-  
-  // In development without Clerk, use a mock user
+// Helper hook for conditional clerk usage
+function useClerkUserSafe() {
   const isDevelopment = process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  let user = null;
   
-  if (!isDevelopment) {
-    try {
-      const { useUser } = require('@clerk/nextjs');
-      const clerkUser = useUser();
-      user = clerkUser.user;
-    } catch {
-      // Clerk not available
-    }
-  } else {
-    // Mock user for development
-    user = {
-      firstName: 'Developer',
-      lastName: 'User',
-      email: 'dev@plotweaver.local'
+  if (isDevelopment) {
+    return {
+      user: {
+        firstName: 'Developer',
+        lastName: 'User',
+        email: 'dev@plotweaver.local'
+      }
     };
   }
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { useUser } = require('@clerk/nextjs');
+    return useUser();
+  } catch {
+    return {
+      user: {
+        firstName: 'Developer',
+        lastName: 'User',
+        email: 'dev@plotweaver.local'
+      }
+    };
+  }
+}
+
+export default function DashboardPage() {
+  const [showCreateWizard, setShowCreateWizard] = useState(false)
+  const { user } = useClerkUserSafe();
 
   const handleCreateProject = () => {
     setShowCreateWizard(true)

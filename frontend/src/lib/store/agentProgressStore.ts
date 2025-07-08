@@ -5,7 +5,7 @@ export interface AgentJobWithTask extends AgentJob {
   currentTask?: string;
 }
 
-export { AgentJob } from '../../types/store';
+export type { AgentJob } from '../../types/store';
 
 export interface AgentProgress {
   progress: number;

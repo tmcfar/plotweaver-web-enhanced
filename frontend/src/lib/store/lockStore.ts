@@ -148,11 +148,12 @@ export const useLockStore = create<LockState & LockActions>()(
                 newLocks[componentId] = {
                   id: `lock-${Date.now()}-${componentId}`,
                   componentId,
+                  componentType: 'component',
                   level: op.lockLevel,
                   type: 'personal',
                   reason: op.reason,
                   lockedBy: 'current-user', // TODO: Get from auth
-                  lockedAt: new Date(),
+                  lockedAt: new Date().toISOString(),
                   canOverride: true,
                 };
               } else if (op.type === 'unlock') {

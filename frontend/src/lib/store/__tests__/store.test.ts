@@ -134,7 +134,10 @@ describe('Zustand Store', () => {
 
       const jobData = {
         agentName: 'Test Agent',
-        status: 'queued' as const
+        displayName: 'Test Agent',
+        status: 'queued' as const,
+        progress: 0,
+        startedAt: new Date()
       };
 
       let jobId: string;
@@ -168,7 +171,10 @@ describe('Zustand Store', () => {
 
       const jobData = {
         agentName: 'Test Agent',
-        status: 'queued' as const
+        displayName: 'Test Agent',
+        status: 'queued' as const,
+        progress: 0,
+        startedAt: new Date()
       };
 
       let jobId: string;

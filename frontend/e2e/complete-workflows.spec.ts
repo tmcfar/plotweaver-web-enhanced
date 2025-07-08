@@ -288,7 +288,7 @@ test.describe('Accessibility', () => {
     await page.click('[data-testid="generate-scene"]');
     
     // Check announcements
-    const announcements = await page.evaluate(() => window.announcements);
+    const announcements = await page.evaluate(() => (window as any).announcements);
     expect(announcements).toContain('Scene generation started');
   });
 });

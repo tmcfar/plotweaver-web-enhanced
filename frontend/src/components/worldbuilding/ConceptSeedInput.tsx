@@ -34,7 +34,7 @@ export function ConceptSeedInput({ onAnalysisComplete, projectPath }: ConceptSee
     try {
       const analysis = await worldbuildingApi.analyzeConceptapi({
         concept_text: conceptText,
-        project_path: projectPath,
+        project_path: projectPath || '',
         user_preferences: {
           time_investment: 'moderate' // This could be configurable
         }

@@ -283,6 +283,7 @@ describe('VirtualizedLockTree', () => {
       renderSpy(index);
       return <div style={style}>Item {index}</div>;
     });
+    CustomRow.displayName = 'CustomRow';
 
     render(
       <VirtualizedLockTree

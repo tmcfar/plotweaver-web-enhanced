@@ -143,11 +143,12 @@ function debouncedSaveLocks(locks: StoreState['locks']) {
         apiLocks[key] = {
           id: lock.componentId,
           componentId: lock.componentId,
+          componentType: 'component',
           type: 'personal',
           level: lock.level,
           reason: lock.reason || '',
           lockedBy: lock.lockedBy,
-          lockedAt: new Date(lock.lockedAt),
+          lockedAt: lock.lockedAt,
           canOverride: false
         };
       });

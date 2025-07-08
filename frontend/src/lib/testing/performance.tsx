@@ -59,7 +59,7 @@ export async function testRenderPerformance(
     
     let componentCount = 0
     const originalCreateElement = React.createElement
-    React.createElement = (...args) => {
+    React.createElement = (...args: any[]) => {
       componentCount++
       return originalCreateElement(...args)
     }

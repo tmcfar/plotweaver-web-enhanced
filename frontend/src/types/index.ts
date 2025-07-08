@@ -28,14 +28,14 @@ export type {
 
 export type {
   Project,
-  ProjectStatus,
+  ProjectStats,
   CreateProjectRequest,
 } from './project';
 
 export type {
   ComponentLock,
   LockConflict,
-  ConflictResolution,
+  Resolution,
 } from './locks';
 
 export type {

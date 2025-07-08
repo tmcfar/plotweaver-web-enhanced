@@ -10,7 +10,7 @@ export interface ComponentLock {
   type: LockType;
   reason: string;
   lockedBy: string;
-  lockedAt: Date;
+  lockedAt: string;
   sharedWith?: string[];
   canOverride?: boolean;
 }
@@ -27,7 +27,7 @@ export interface LockConflict {
   affectedUsers: string[];
   lockedBy: string;
   lockLevel: string;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export interface ConflictResolution {
@@ -197,6 +197,31 @@ class LockAPIService {
       console.error('Failed to fetch audit trail:', error);
       return [];
     }
+  }
+
+  async lockComponent(
+    componentId: string, 
+    level: LockLevel, 
+    reason: string,
+    componentType: string = 'component'
+  ): Promise<ComponentLock> {
+    const lock: ComponentLock = {
+      id: `lock_${componentId}_${Date.now()}`,
+      componentId,
+      componentType,
+      level,
+      type: 'personal',
+      reason,
+      lockedBy: 'current_user',
+      lockedAt: new Date().toISOString(),
+      canOverride: true
+    };
+    return lock;
+  }
+
+  async unlockComponent(componentId: string): Promise<void> {
+    // Implementation for unlocking component
+    return Promise.resolve();
   }
 }
 

@@ -9,7 +9,7 @@ import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Loader2, DollarSign, Zap, FileText } from 'lucide-react';
 
-interface SceneGeneratorProps {
+export interface SceneGeneratorProps {
   projectId: string;
   projectName?: string;
   characters?: Record<string, any>;

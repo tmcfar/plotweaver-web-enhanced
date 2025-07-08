@@ -175,11 +175,11 @@ export function OptimizedImage({
   }
 
   if (fill) {
-    return <Image {...imageProps} fill />
+    return <Image {...imageProps} fill alt={alt || ''} />
   }
 
   if (width && height) {
-    return <Image {...imageProps} width={width} height={height} />
+    return <Image {...imageProps} width={width} height={height} alt={alt || ''} />
   }
 
   // For responsive images without fixed dimensions
@@ -190,7 +190,7 @@ export function OptimizedImage({
         aspectRatio: aspectRatio ? `${aspectRatio}` : '16/9'
       }}
     >
-      <Image {...imageProps} fill />
+      <Image {...imageProps} fill alt={alt || ''} />
     </div>
   )
 }

@@ -40,10 +40,10 @@ export function LazyComponent({
           await new Promise(resolve => setTimeout(resolve, delay))
         }
 
-        const module = await loader()
+        const moduleResult = await loader()
         
         if (mountedRef.current) {
-          setComponent(() => module.default)
+          setComponent(() => moduleResult.default)
           setIsLoading(false)
         }
       } catch (err) {
@@ -282,8 +282,8 @@ export function ProgressiveLoader({
       for (const stage of sortedStages) {
         if (!stage.condition || stage.condition()) {
           try {
-            const module = await stage.component()
-            components.push(module.default)
+            const moduleResult = await stage.component()
+            components.push(moduleResult.default)
           } catch (error) {
             console.error('Failed to load stage:', error)
           }

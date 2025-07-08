@@ -55,27 +55,33 @@ jest.mock('@/hooks/useLockStore', () => ({
 const mockComponents = [
   {
     id: 'component-1',
-    type: 'character',
+    type: 'character' as const,
     name: 'Main Protagonist',
+    description: 'A brave hero on a quest',
     relevance: 95,
     locked: true,
     content: 'A brave hero on a quest',
+    tags: ['protagonist', 'hero'],
   },
   {
     id: 'component-2',
-    type: 'plot',
+    type: 'plot' as const,
     name: 'Chapter 1 Plot',
+    description: 'The journey begins',
     relevance: 85,
     locked: false,
     content: 'The journey begins',
+    tags: ['plot', 'journey'],
   },
   {
     id: 'component-3',
-    type: 'setting',
+    type: 'setting' as const,
     name: 'Fantasy World',
+    description: 'A magical realm',
     relevance: 90,
     locked: true,
     content: 'A magical realm',
+    tags: ['setting', 'fantasy'],
   },
 ];
 

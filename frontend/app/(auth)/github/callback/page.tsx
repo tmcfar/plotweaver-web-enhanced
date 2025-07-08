@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
@@ -11,13 +11,7 @@ export default function GitHubCallback() {
   const searchParams = useSearchParams();
   const code = searchParams.get('code');
 
-  useEffect(() => {
-    if (code) {
-      handleCallback(code);
-    }
-  }, [code]);
-
-  const handleCallback = async (code: string) => {
+  const handleCallback = useCallback(async (code: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/v1/users/github/connect`, {
         method: 'POST',
@@ -37,7 +31,13 @@ export default function GitHubCallback() {
       toast.error('Failed to connect GitHub');
       router.push('/profile?tab=github&error=connection_failed');
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    if (code) {
+      handleCallback(code);
+    }
+  }, [code, handleCallback]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
