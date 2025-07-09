@@ -1,12 +1,16 @@
-import { useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import GitWebSocketClient from '@/lib/git/GitWebSocketClient';
 
 interface GitWebSocketHook {
   isConnected: boolean;
+  client: GitWebSocketClient;
 }
 
 export function useGitWebSocket(projectId: string): GitWebSocketHook {
+  const [client] = useState(() => new GitWebSocketClient());
+  const [connected, setConnected] = useState(false);
   const queryClient = useQueryClient();
 
   const handleGitUpdate = useCallback((data: any) => {
@@ -33,53 +37,28 @@ export function useGitWebSocket(projectId: string): GitWebSocketHook {
   }, [projectId, queryClient]);
 
   useEffect(() => {
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
-    const token = 'development-token'; // TODO: Get from auth context
+    const token = localStorage.getItem('authToken') || 'development-token';
     
-    const ws = new WebSocket(`${wsUrl}/ws?token=${token}`);
-    
-    ws.onopen = () => {
-      console.log('Git WebSocket connected for project:', projectId);
+    if (projectId) {
+      client.connect(projectId, token);
+      setConnected(true);
       
-      // Subscribe to project updates
-      ws.send(JSON.stringify({
-        channel: `subscribe:${projectId}`,
-        data: {}
-      }));
-    };
-    
-    ws.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        
-        // Handle git updates
-        if (message.type === 'git_update' && message.project_id === projectId) {
-          handleGitUpdate(message);
-        }
-        
-        // Handle general broadcasts
-        if (message.type === 'git_update' && !message.project_id) {
-          handleGitUpdate(message);
-        }
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
-    
-    ws.onclose = () => {
-      console.log('Git WebSocket disconnected');
-    };
-    
-    ws.onerror = (error) => {
-      console.error('Git WebSocket error:', error);
-    };
-    
+      // Subscribe to git updates
+      client.subscribe('git_update', handleGitUpdate);
+      client.subscribe('file_changed', (data) => {
+        queryClient.invalidateQueries(['git', 'content', projectId, data.file_path]);
+        queryClient.invalidateQueries(['git', 'history', projectId, data.file_path]);
+      });
+    }
+
     return () => {
-      ws.close();
+      client.disconnect();
+      setConnected(false);
     };
-  }, [projectId, handleGitUpdate]);
+  }, [projectId, client, handleGitUpdate, queryClient]);
 
   return {
-    isConnected: true // TODO: Track actual connection state
+    isConnected: connected,
+    client
   };
 }
