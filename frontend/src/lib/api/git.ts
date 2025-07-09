@@ -9,16 +9,19 @@ import {
   PushOptions, 
   PushResult 
 } from '@/types/git';
+import { gitCache, GitCache } from '@/lib/git/GitCache';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BFF_URL || 'http://localhost:8000';
 
 class GitApiClient {
   private baseURL: string;
   private authToken: string;
+  private cache: GitCache;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
     this.authToken = localStorage.getItem('authToken') || '';
+    this.cache = gitCache;
   }
 
   private async request<T>(
@@ -42,12 +45,34 @@ class GitApiClient {
   }
 
   async getFileContent(projectId: string, filePath: string): Promise<FileContent> {
-    return this.request<FileContent>(`/api/git/content/${projectId}/${filePath}`);
+    // Check cache first
+    const cached = this.cache.get<FileContent>(projectId, 'file_content', filePath);
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.request<FileContent>(`/api/git/content/${projectId}/${filePath}`);
+    
+    // Cache the result
+    this.cache.set(projectId, 'file_content', result, GitCache.TTL.FILE_CONTENT, filePath);
+    
+    return result;
   }
 
   async getProjectTree(projectId: string, path: string = ''): Promise<DirectoryTree> {
+    // Check cache first
+    const cached = this.cache.get<DirectoryTree>(projectId, 'project_tree', path);
+    if (cached) {
+      return cached;
+    }
+
     const params = path ? `?path=${encodeURIComponent(path)}` : '';
-    return this.request<DirectoryTree>(`/api/git/tree/${projectId}${params}`);
+    const result = await this.request<DirectoryTree>(`/api/git/tree/${projectId}${params}`);
+    
+    // Cache the result
+    this.cache.set(projectId, 'project_tree', result, GitCache.TTL.DIRECTORY_TREE, path);
+    
+    return result;
   }
 
   async getFileHistory(
@@ -55,32 +80,110 @@ class GitApiClient {
     filePath: string,
     options: { limit?: number; skip?: number } = {}
   ): Promise<FileHistory> {
+    // Check cache first
+    const cached = this.cache.get<FileHistory>(projectId, 'file_history', filePath, options);
+    if (cached) {
+      return cached;
+    }
+
     const params = new URLSearchParams();
     if (options.limit) params.append('limit', options.limit.toString());
     if (options.skip) params.append('skip', options.skip.toString());
     
-    return this.request<FileHistory>(
+    const result = await this.request<FileHistory>(
       `/api/git/history/${projectId}/${filePath}?${params}`
     );
+    
+    // Cache the result
+    this.cache.set(projectId, 'file_history', result, GitCache.TTL.FILE_HISTORY, filePath, options);
+    
+    return result;
   }
 
   async getGitDiff(projectId: string, baseRef: string, headRef: string): Promise<GitDiff> {
-    return this.request<GitDiff>(`/api/git/diff/${projectId}/${baseRef}/${headRef}`);
+    // Check cache first
+    const cached = this.cache.get<GitDiff>(projectId, 'git_diff', baseRef, headRef);
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.request<GitDiff>(`/api/git/diff/${projectId}/${baseRef}/${headRef}`);
+    
+    // Cache the result
+    this.cache.set(projectId, 'git_diff', result, GitCache.TTL.DIFF, baseRef, headRef);
+    
+    return result;
   }
 
   async getRepositoryStatus(projectId: string): Promise<RepositoryStatus> {
-    return this.request<RepositoryStatus>(`/api/git/status/${projectId}`);
+    // Check cache first
+    const cached = this.cache.get<RepositoryStatus>(projectId, 'repository_status');
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.request<RepositoryStatus>(`/api/git/status/${projectId}`);
+    
+    // Cache the result with shorter TTL since status changes frequently
+    this.cache.set(projectId, 'repository_status', result, GitCache.TTL.REPOSITORY_STATUS);
+    
+    return result;
   }
 
   async getProjectBranches(projectId: string): Promise<ProjectBranches> {
-    return this.request<ProjectBranches>(`/api/git/branches/${projectId}`);
+    // Check cache first
+    const cached = this.cache.get<ProjectBranches>(projectId, 'project_branches');
+    if (cached) {
+      return cached;
+    }
+
+    const result = await this.request<ProjectBranches>(`/api/git/branches/${projectId}`);
+    
+    // Cache the result
+    this.cache.set(projectId, 'project_branches', result, GitCache.TTL.BRANCHES);
+    
+    return result;
   }
 
   async pushChanges(projectId: string, options: PushOptions): Promise<PushResult> {
-    return this.request<PushResult>(`/api/git/push/${projectId}`, {
+    const result = await this.request<PushResult>(`/api/git/push/${projectId}`, {
       method: 'POST',
       body: JSON.stringify(options),
     });
+    
+    // Invalidate relevant caches after push
+    this.cache.invalidate(projectId, 'repository_status');
+    this.cache.invalidate(projectId, 'project_branches');
+    // Invalidate file content and tree caches as they might have changed
+    this.cache.invalidatePattern(projectId);
+    
+    return result;
+  }
+
+  // Cache management methods
+  clearCache(projectId?: string): void {
+    if (projectId) {
+      this.cache.invalidate(projectId);
+    } else {
+      this.cache.clear();
+    }
+  }
+
+  getCacheStats() {
+    return this.cache.getStats();
+  }
+
+  invalidateFileCache(projectId: string, filePath: string): void {
+    this.cache.invalidate(projectId, 'file_content', filePath);
+    this.cache.invalidate(projectId, 'file_history', filePath);
+  }
+
+  invalidateTreeCache(projectId: string, path?: string): void {
+    if (path) {
+      this.cache.invalidate(projectId, 'project_tree', path);
+    } else {
+      this.cache.invalidatePattern(`${projectId}:project_tree`);
+    }
   }
 }
 

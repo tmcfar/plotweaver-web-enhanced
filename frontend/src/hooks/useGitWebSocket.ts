@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import GitWebSocketClient from '@/lib/git/GitWebSocketClient';
+import { gitCache } from '@/lib/git/GitCache';
 
 interface GitWebSocketHook {
   isConnected: boolean;
@@ -24,7 +25,16 @@ export function useGitWebSocket(projectId: string): GitWebSocketHook {
       data.updated_files?.forEach((path: string) => {
         queryClient.invalidateQueries(['git', 'content', projectId, path]);
         queryClient.invalidateQueries(['git', 'history', projectId, path]);
+        
+        // Invalidate cache for specific files
+        gitCache.invalidate(projectId, 'file_content', path);
+        gitCache.invalidate(projectId, 'file_history', path);
       });
+      
+      // Invalidate general caches that might be affected
+      gitCache.invalidate(projectId, 'repository_status');
+      gitCache.invalidate(projectId, 'project_branches');
+      gitCache.invalidatePattern(`${projectId}:project_tree`);
       
       // Show notification
       const fileCount = data.updated_files?.length || 0;
@@ -48,6 +58,10 @@ export function useGitWebSocket(projectId: string): GitWebSocketHook {
       client.subscribe('file_changed', (data) => {
         queryClient.invalidateQueries(['git', 'content', projectId, data.file_path]);
         queryClient.invalidateQueries(['git', 'history', projectId, data.file_path]);
+        
+        // Invalidate cache for the specific file
+        gitCache.invalidate(projectId, 'file_content', data.file_path);
+        gitCache.invalidate(projectId, 'file_history', data.file_path);
       });
     }
 
