@@ -131,39 +131,34 @@ export const bffApi = {
   // Git integration endpoints
   git: {
     getFileContent: async (projectId: string, filePath: string) => {
-      const response = await bffClient.get('/api/git/content', {
-        params: { project_id: projectId, file_path: filePath }
-      });
+      const response = await bffClient.get(`/api/git/content/${projectId}/${filePath}`);
       return response.data;
     },
-    getDirectoryListing: async (projectId: string, dirPath?: string) => {
-      const response = await bffClient.get('/api/git/directory', {
-        params: { project_id: projectId, dir_path: dirPath }
+    getProjectTree: async (projectId: string, path?: string) => {
+      const url = `/api/git/tree/${projectId}`;
+      const response = await bffClient.get(url, {
+        params: path ? { path } : {}
       });
       return response.data;
     },
     getFileHistory: async (projectId: string, filePath: string, limit?: number) => {
-      const response = await bffClient.get('/api/git/history', {
-        params: { project_id: projectId, file_path: filePath, limit }
+      const url = `/api/git/history/${projectId}/${filePath}`;
+      const response = await bffClient.get(url, {
+        params: limit ? { limit } : {}
       });
       return response.data;
     },
+    getDiff: async (projectId: string, baseRef: string, headRef: string) => {
+      const response = await bffClient.get(`/api/git/diff/${projectId}/${baseRef}/${headRef}`);
+      return response.data;
+    },
+    // Backend endpoints now implemented
     getRepositoryStatus: async (projectId: string) => {
-      const response = await bffClient.get('/api/git/status', {
-        params: { project_id: projectId }
-      });
+      const response = await bffClient.get(`/api/git/status/${projectId}`);
       return response.data;
     },
     getBranches: async (projectId: string) => {
-      const response = await bffClient.get('/api/git/branches', {
-        params: { project_id: projectId }
-      });
-      return response.data;
-    },
-    getDiff: async (projectId: string, filePath: string, fromSha?: string, toSha?: string) => {
-      const response = await bffClient.get('/api/git/diff', {
-        params: { project_id: projectId, file_path: filePath, from_sha: fromSha, to_sha: toSha }
-      });
+      const response = await bffClient.get(`/api/git/branches/${projectId}`);
       return response.data;
     },
   },

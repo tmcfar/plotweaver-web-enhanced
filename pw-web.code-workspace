@@ -5,20 +5,11 @@
             "name": "pw-web"
         },
         {
-            "path": "/home/tmcfar/dev/pw2/src",
-            "name": "pw2-src (reference)"
-        },
-        {
-            "path": "/home/tmcfar/dev/pw2/docs",
-            "name": "pw2-docs (reference)"
-        },
-        {
-            "path": "/home/tmcfar/dev/pw2/docs/planning/strategy/pw-web",
-            "name": "pw-web-docs (reference)"
-        },
-        {
             "path": "/home/tmcfar/dev/pw2/docs/api-contracts",
             "name": "pw-api-contracts (reference)"
+        },
+        {
+            "path": "../pw-docs"
         }
     ],
     "settings": {

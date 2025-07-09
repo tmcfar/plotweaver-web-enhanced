@@ -1,6 +1,6 @@
 """Tests for the preview capture functionality."""
 
-from src.preview.capture import capture_preview
+from bff.preview.capture import capture_preview
 
 
 def test_capture_preview_function_exists():

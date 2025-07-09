@@ -107,7 +107,7 @@ export function ProjectStats() {
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.currentStreak}</div>
+          <div className="text-2xl font-bold">{stats.currentStreak || 0}</div>
           <p className="text-xs text-muted-foreground mt-2">
             Days in a row
           </p>

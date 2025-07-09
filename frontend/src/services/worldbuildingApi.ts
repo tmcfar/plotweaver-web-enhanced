@@ -33,7 +33,7 @@ bffClient.interceptors.request.use(
 );
 
 export const worldbuildingApi = {
-  analyzeConceptapi: async (data: ConceptAnalysisRequest): Promise<ConceptAnalysisResponse> => {
+  analyzeConcept: async (data: ConceptAnalysisRequest): Promise<ConceptAnalysisResponse> => {
     const response = await bffClient.post('/api/worldbuilding/analyze-concept', data);
     return response.data;
   },

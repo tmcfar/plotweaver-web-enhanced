@@ -70,6 +70,28 @@ RUN npm run build && \
     # Create standalone output
     npm run build:standalone
 
+# Development image for hot reloading
+FROM base AS development
+WORKDIR /app
+
+# Install development dependencies
+RUN apk add --no-cache libc6-compat
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# Copy source code
+COPY . .
+
+# Set development environment
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Expose port
+EXPOSE 3000
+
+# Start development server
+CMD ["npm", "run", "dev"]
+
 # Production image, copy all the files and run next
 FROM base AS runner
 WORKDIR /app

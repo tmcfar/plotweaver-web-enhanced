@@ -2,8 +2,8 @@
 
 import pytest
 import time
-from src.auth.jwt_auth import JWTAuthenticator, WebSocketAuthManager
-from src.auth.rate_limiter import RateLimitManager, RateLimitConfig
+from bff.auth.jwt_auth import JWTAuthenticator, WebSocketAuthManager
+from bff.auth.rate_limiter import RateLimitManager, RateLimitConfig
 
 
 class TestJWTAuthentication:

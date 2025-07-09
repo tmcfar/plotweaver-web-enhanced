@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ThemeProvider } from "@/components/design-system/theme-provider"
+import { QueryProvider } from "@/components/providers/QueryProvider"
 import { Inter } from 'next/font/google'
 import './globals.css'
 
@@ -18,11 +19,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ThemeProvider>
-          <div className="min-h-screen bg-background">
-            {children}
-          </div>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <div className="min-h-screen bg-background">
+              {children}
+            </div>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   )

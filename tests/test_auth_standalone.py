@@ -2,7 +2,7 @@
 
 import time
 from unittest.mock import patch
-from src.auth.rate_limiter import (
+from bff.auth.rate_limiter import (
     RateLimitManager,
     RateLimitConfig,
     SlidingWindowRateLimiter,
@@ -128,7 +128,7 @@ class TestBoundedCollectionsStandalone:
 
     def test_bounded_dict_max_size(self):
         """Test bounded dictionary respects max size."""
-        from src.server.bounded_collections import BoundedDict
+        from bff.server.bounded_collections import BoundedDict
 
         bounded_dict = BoundedDict(max_size=3)
 
@@ -147,7 +147,7 @@ class TestBoundedCollectionsStandalone:
 
     def test_bounded_dict_ttl(self):
         """Test bounded dictionary TTL functionality."""
-        from src.server.bounded_collections import BoundedDict
+        from bff.server.bounded_collections import BoundedDict
 
         bounded_dict = BoundedDict(max_size=10, ttl_seconds=1)
 
@@ -162,7 +162,7 @@ class TestBoundedCollectionsStandalone:
 
     def test_lru_cache_behavior(self):
         """Test LRU cache eviction behavior."""
-        from src.server.bounded_collections import LRUCache
+        from bff.server.bounded_collections import LRUCache
 
         cache = LRUCache(max_size=3)
 
@@ -193,7 +193,7 @@ def test_manual_security_checks():
     )  # Should be changed in prod
 
     # Test 2: Ensure rate limits are reasonable
-    from src.auth.rate_limiter import RateLimitConfig
+    from bff.auth.rate_limiter import RateLimitConfig
 
     config = RateLimitConfig()
     assert config.max_messages_per_minute <= 100  # Not too permissive
@@ -201,7 +201,7 @@ def test_manual_security_checks():
     assert config.cooldown_period >= 60  # Sufficient cooldown
 
     # Test 3: Ensure bounded collections have reasonable limits
-    from src.server.constants import MAX_CONNECTIONS
+    from bff.server.constants import MAX_CONNECTIONS
 
     assert MAX_CONNECTIONS <= 10000  # Reasonable upper bound
 
@@ -212,7 +212,7 @@ def test_memory_leak_prevention():
     """Test memory leak prevention mechanisms."""
 
     # Test bounded collections don't grow indefinitely
-    from src.server.bounded_collections import BoundedDict, BoundedSet
+    from bff.server.bounded_collections import BoundedDict, BoundedSet
 
     # Test with large number of items
     large_dict = BoundedDict(max_size=100)

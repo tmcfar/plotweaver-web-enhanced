@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 from fastapi import WebSocket, WebSocketDisconnect
 
-from src.server.main import app, manager, EnhancedConnectionManager
-from src.server.bounded_collections import BoundedDict, BoundedSet
+from bff.server.main import app, manager, EnhancedConnectionManager
+from bff.server.bounded_collections import BoundedDict, BoundedSet
 
 client = TestClient(app)
 
@@ -348,7 +348,7 @@ class TestGlobalManagerInstance:
 
     def test_manager_singleton_behavior(self):
         """Test that the same manager instance is used throughout the application."""
-        from src.server.main import manager as manager2
+        from bff.server.main import manager as manager2
 
         assert manager is manager2
 
@@ -382,7 +382,7 @@ class TestWebSocketMessageHandling:
     @pytest.mark.asyncio
     async def test_message_size_limit(self):
         """Test message size limit enforcement."""
-        from src.server.constants import MAX_MESSAGE_SIZE
+        from bff.server.constants import MAX_MESSAGE_SIZE
 
         client_id = "test_client"
         mock_websocket = AsyncMock(spec=WebSocket)
@@ -409,7 +409,7 @@ class TestWebSocketMessageHandling:
         self.manager.active_connections[client_id] = mock_websocket
 
         # Mock rate limiter
-        from src.auth.rate_limiter import rate_limiter
+        from bff.auth.rate_limiter import rate_limiter
 
         rate_limiter.check_message_rate = MagicMock()
 

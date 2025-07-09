@@ -1,0 +1,17 @@
+=== Direct fetch() calls ===
+'/api/agents/scene-generator/execute'
+'/api/ai/stream'
+'/api/ai/suggestions'
+'/api/comments'
+'/api/continuity/apply-fix'
+'/api/drafts'
+'/api/foundation/status'
+'/api/git/commit'
+'/api/pre-generation/validate'
+'/api/projects/sync'
+'/api/settings'
+'/api/settings/sync'
+'/api/v1/feedback/friction'
+'/api/v1/feedback/session'
+
+=== API client calls ===

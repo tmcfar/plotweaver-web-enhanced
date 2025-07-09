@@ -1,0 +1,128 @@
+=== BFF Flask/FastAPI Routes ===
+/analytics/events/{session_id}
+/analytics/feedback/{session_id}
+/analytics/stats
+/analyze-concept
+/api/git/branches/{project_id}
+/api/git/commit/{project_id}
+/api/git/files/{project_id}
+/api/git/push/{project_id}
+/api/git/stage/{project_id}
+/api/git/unstage/{project_id}
+/assumptions/{assumption_key}/override
+/events/batch
+/feedback
+/feedback/friction
+/feedback/session
+/help/bulk
+/help/search
+/help/{help_id}
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/branches/{project_id}")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/chapters")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/chapters/{chapter}/scenes")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/characters")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/info")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/plot")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/search")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/status/{project_id}")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.get("/api/git/world")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.on_event("startup")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.post("/api/agent-progress/{project_id}")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.post("/api/webhooks/github")
+/home/tmcfar/dev/pw-web/bff/server/git_endpoints.py:    @app.post("/api/webhooks/gitlab")
+/home/tmcfar/dev/pw-web/bff/server/git_write_endpoints.py:@router.delete(
+/home/tmcfar/dev/pw-web/bff/server/git_write_endpoints.py:@router.put(
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/git/content/{project_id}/{file_path:path}")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/git/diff/{project_id}/{base_ref}/{head_ref}")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/git/history/{project_id}/{file_path:path}")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/git/tree/{project_id}")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/health")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/preview/current")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/preview/screenshot")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/projects/{project_id}/conflicts")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/projects/{project_id}/locks")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/projects/{project_id}/locks/audit")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.get("/api/user/mode-set")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.post("/api/preview/update")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.post("/api/projects/{project_id}/conflicts/{conflict_id}/resolve")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.post("/api/projects/{project_id}/locks/bulk")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.post("/api/projects/{project_id}/locks/check-conflicts")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.post("/api/user/mode-set")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.post("/api/webhooks/github")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.put("/api/projects/{project_id}/locks/{component_id}")
+/home/tmcfar/dev/pw-web/bff/server/main.py:@app.websocket("/ws")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:                * `@app.get("/items/", tags=["items"])`
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:                * `@app.get("/users/", tags=["users"])`
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:                @app.get("/items/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:                `@app.exception_handler()`.
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.delete("/items/{item_id}")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.exception_handler(UnicornException)
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.get("/items/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.head("/items/", status_code=204)
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.middleware("http")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.options("/items/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.patch("/items/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.post("/items/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.put("/items/{item_id}")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:        @app.websocket("/ws")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/background.py:    @app.post("/send-notification/{email}")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/datastructures.py:    @app.post("/files/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/datastructures.py:    @app.post("/uploadfile/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/exceptions.py:    @app.get("/items/{item_id}")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/exceptions.py:    @app.websocket("/items/{item_id}/ws")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/param_functions.py:    @app.get("/items/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/param_functions.py:    @app.get("/items/{item_id}")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/param_functions.py:    @app.get("/users/me/items/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/security/api_key.py:    @app.get("/items/")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/security/http.py:    @app.get("/users/me")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/security/oauth2.py:    @app.post("/login")
+/items/
+/items/{item_id}
+/setup-paths
+/setup-progress
+/setup-steps/{step_id}/complete
+/status
+/users/
+/users/", tags=["users
+/ws
+
+=== BFF Service Methods ===
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/v1/mypy.py:            error_default_and_default_factory_specified(ctx.api, ctx.context)
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/v1/mypy.py:def error_from_orm(model_name: str, api: CheckerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/v1/mypy.py:def error_invalid_config_value(name: str, api: SemanticAnalyzerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/v1/mypy.py:def error_required_dynamic_aliases(api: SemanticAnalyzerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/v1/mypy.py:def error_untyped_fields(api: SemanticAnalyzerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/v1/mypy.py:def error_default_and_default_factory_specified(api: CheckerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/mypy.py:            error_default_and_default_factory_specified(ctx.api, ctx.context)
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/mypy.py:    def deserialize(cls, info: TypeInfo, data: JsonDict, api: SemanticAnalyzerPluginInterface) -> PydanticModelField:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/mypy.py:def error_from_attributes(model_name: str, api: CheckerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/mypy.py:def error_invalid_config_value(name: str, api: SemanticAnalyzerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/mypy.py:def error_required_dynamic_aliases(api: SemanticAnalyzerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/mypy.py:def error_untyped_fields(api: SemanticAnalyzerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/mypy.py:def error_extra_fields_on_root_model(api: CheckerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pydantic/mypy.py:def error_default_and_default_factory_specified(api: CheckerPluginInterface, context: Context) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/security/api_key.py:    async def read_items(api_key: str = Depends(query_scheme)):
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/utils.py:def get_openapi_security_definitions(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/utils.py:def get_openapi_operation_parameters(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/utils.py:def get_openapi_operation_request_body(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/utils.py:def get_openapi_operation_metadata(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/utils.py:def get_openapi_path(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/utils.py:            security_definitions, operation_security = get_openapi_security_definitions(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/utils.py:def get_openapi(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/docs.py:            It defaults to [swagger_ui_default_parameters][fastapi.openapi.docs.swagger_ui_default_parameters].
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/openapi/models.py:    type_: SecuritySchemeType = Field(default=SecuritySchemeType.apiKey, alias="type")
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/routing.py:    def add_api_route(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/routing.py:    def api_route(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/routing.py:    def add_api_websocket_route(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:    def openapi(self) -> Dict[str, Any]:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:            async def openapi(req: Request) -> JSONResponse:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:    def add_api_route(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:    def api_route(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/fastapi/applications.py:    def add_api_websocket_route(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:    async def wrap_api_call(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/playwright/_impl/_connection.py:    def wrap_api_call_sync(
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py:class ImplToApiMapping:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/playwright/_impl/_impl_to_api_mapping.py:    def register(self, impl_class: type, api_class: type) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pip/_internal/index/collector.py:def _ensure_api_header(response: Response) -> None:
+/home/tmcfar/dev/pw-web/bff/venv/lib/python3.12/site-packages/pip/_internal/index/collector.py:def _ensure_api_response(url: str, session: PipSession) -> None:

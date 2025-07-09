@@ -5,7 +5,7 @@ import json
 import pytest
 import websockets
 from fastapi.testclient import TestClient
-from src.server.main import app
+from bff.server.main import app
 
 
 @pytest.fixture

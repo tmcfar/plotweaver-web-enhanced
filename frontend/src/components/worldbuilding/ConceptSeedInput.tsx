@@ -32,7 +32,7 @@ export function ConceptSeedInput({ onAnalysisComplete, projectPath }: ConceptSee
     setError(null);
 
     try {
-      const analysis = await worldbuildingApi.analyzeConceptapi({
+      const analysis = await worldbuildingApi.analyzeConcept({
         concept_text: conceptText,
         project_path: projectPath || '',
         user_preferences: {

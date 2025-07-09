@@ -387,20 +387,20 @@ export function useDateFormat() {
     return new Intl.DateTimeFormat(language, options).format(dateObj)
   }, [language])
   
+  const { t } = useTranslation()
+  
   const formatRelativeTime = useCallback((date: Date | string | number) => {
     const dateObj = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date
     const now = new Date()
     const diffMs = now.getTime() - dateObj.getTime()
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
     
-    const { t } = useTranslation()
-    
     if (diffDays === 0) return t('time.today')
     if (diffDays === 1) return t('time.yesterday')
     if (diffDays < 7) return t('time.daysAgo', { count: diffDays })
     if (diffDays < 30) return t('time.weeksAgo', { count: Math.floor(diffDays / 7) })
     return t('time.monthsAgo', { count: Math.floor(diffDays / 30) })
-  }, [language])
+  }, [t])
   
   return { formatDate, formatRelativeTime }
 }

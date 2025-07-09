@@ -16,38 +16,21 @@ import {
   CollaborationIcon
 } from '@/components/design-system/icons'
 
-// Helper hook for conditional clerk usage
-function useClerkUserSafe() {
-  const isDevelopment = process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  
-  if (isDevelopment) {
-    return {
-      user: {
-        firstName: 'Developer',
-        lastName: 'User',
-        email: 'dev@plotweaver.local'
-      }
-    };
-  }
+// Safe hook that always returns a user without conditional hook calls
+function useUserSafe() {
+  // Default development user
+  const defaultUser = {
+    firstName: 'Developer',
+    lastName: 'User',
+    email: 'dev@plotweaver.local'
+  };
 
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { useUser } = require('@clerk/nextjs');
-    return useUser();
-  } catch {
-    return {
-      user: {
-        firstName: 'Developer',
-        lastName: 'User',
-        email: 'dev@plotweaver.local'
-      }
-    };
-  }
+  return { user: defaultUser };
 }
 
 export default function DashboardPage() {
   const [showCreateWizard, setShowCreateWizard] = useState(false)
-  const { user } = useClerkUserSafe();
+  const { user } = useUserSafe();
 
   const handleCreateProject = () => {
     setShowCreateWizard(true)

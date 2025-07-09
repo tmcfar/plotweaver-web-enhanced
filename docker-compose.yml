@@ -1,0 +1,63 @@
+
+services:
+  # PlotWeaver Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+        NEXT_PUBLIC_ENV: ${NEXT_PUBLIC_ENV:-production}
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://backend:8000}
+      - NEXT_PUBLIC_WS_URL=${NEXT_PUBLIC_WS_URL:-ws://backend:8000}
+      - NEXT_PUBLIC_ENV=${NEXT_PUBLIC_ENV:-production}
+    networks:
+      - plotweaver-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PlotWeaver FastAPI Backend (BFF)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.bff
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - FRONTEND_URL=${FRONTEND_URL:-http://frontend:3000}
+      - DEBUG=${DEBUG:-false}
+    volumes:
+      - .:/app
+      - backend-data:/app/data
+    networks:
+      - plotweaver-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  plotweaver-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+    driver: local

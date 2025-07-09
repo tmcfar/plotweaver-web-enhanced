@@ -1,0 +1,45 @@
+
+services:
+  # Development overrides for frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_WS_URL=ws://localhost:8000
+      - NEXT_PUBLIC_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    restart: "no"
+
+  # Development overrides for backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.bff
+      target: development
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - DEBUG=true
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - FRONTEND_URL=http://localhost:3000
+    volumes:
+      - .:/app
+      - backend-dev-data:/app/data
+    command: python -m uvicorn bff.server.main:app --reload --host 0.0.0.0 --port 8000
+    restart: "no"
+
+volumes:
+  backend-dev-data:
+    driver: local

@@ -1,14 +1,15 @@
 'use client'
 
-import React from 'react'
+import React, { use } from 'react'
 import { EditorLayout } from '@/components/editor/EditorLayout'
 
 interface ProjectEditorPageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function ProjectEditorPage({ params }: ProjectEditorPageProps) {
-  return <EditorLayout projectId={params.id} />
+  const { id } = use(params)
+  return <EditorLayout projectId={id} />
 }

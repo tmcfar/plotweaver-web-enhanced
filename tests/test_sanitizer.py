@@ -1,7 +1,7 @@
 """Comprehensive tests for the HTML sanitizer module."""
 
 import pytest
-from src.preview.sanitizer import HTMLSanitizer, sanitize_html
+from bff.preview.sanitizer import HTMLSanitizer, sanitize_html
 
 
 class TestHTMLSanitizer:

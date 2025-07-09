@@ -19,17 +19,30 @@ jest.mock('@/hooks/useLockStore', () => ({
   }),
 }));
 
-// Mock react-window with a simpler approach
+// Mock react-window with a simpler approach that properly renders children
+const MockFixedSizeList = React.forwardRef(({ children: Children, height, itemCount, itemSize, width, role, 'aria-label': ariaLabel }: any, ref: any) => {
+  React.useImperativeHandle(ref, () => ({
+    scrollToItem: jest.fn(),
+  }));
+  
+  return (
+    <div 
+        data-testid="virtual-tree" 
+        style={{ height, width }} 
+        role={role}
+        aria-label={ariaLabel}
+      >
+        {Array.from({ length: Math.min(itemCount, 20) }).map((_, index) => (
+          <Children key={index} index={index} style={{ height: itemSize, display: 'block' }} />
+        ))}
+      </div>
+    );
+});
+
+MockFixedSizeList.displayName = 'MockFixedSizeList';
+
 jest.mock('react-window', () => ({
-  FixedSizeList: ({ children, height, itemCount, itemSize, width }: any) => (
-    <div data-testid="virtual-tree" style={{ height, width }}>
-      {Array.from({ length: Math.min(itemCount, 5) }).map((_, index) => (
-        <div key={index} data-testid={`tree-item-${index}`}>
-          Mock tree item {index}
-        </div>
-      ))}
-    </div>
-  ),
+  FixedSizeList: MockFixedSizeList,
 }));
 
 // Generate large dataset for performance testing

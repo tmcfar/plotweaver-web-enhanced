@@ -118,19 +118,10 @@ class ProjectAPI {
     return {
       totalProjects: projects.length,
       activeProjects: projects.filter(p => !p.git_repo_url || p.git_initialized).length,
-      totalWords: projects.reduce((sum, p) => sum + (p.statistics?.total_words || 0), 0),
-      averageWordsPerProject: projects.length > 0 
-        ? Math.round(projects.reduce((sum, p) => sum + (p.statistics?.total_words || 0), 0) / projects.length)
-        : 0,
-      projectsByGenre: {},
-      projectsByStatus: {
-        draft: projects.length,
-        inProgress: 0,
-        completed: 0,
-        published: 0,
-        archived: 0
-      },
-      recentActivity: []
+      completedProjects: 0, // TODO: Track completed projects in backend
+      totalWordCount: projects.reduce((sum, p) => sum + (p.statistics?.total_words || 0), 0),
+      averageWordsPerDay: 0, // TODO: Calculate based on project creation dates
+      currentStreak: 0 // TODO: Track writing streaks
     }
   }
 

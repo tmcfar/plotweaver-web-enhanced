@@ -1,5 +1,5 @@
 # BFF Dockerfile
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
 
 # Install git
 RUN apt-get update && apt-get install -y \
@@ -11,24 +11,46 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements
-COPY requirements.txt .
+COPY bff/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install additional dependencies for git operations
 RUN pip install --no-cache-dir aiofiles pyyaml
 
+# Development stage
+FROM base AS development
+WORKDIR /app
+
+# Set environment variables for development
+ENV PYTHONPATH=/app:/app/bff
+ENV GIT_REPO_PATH=/opt/plotweaver/bff-repo
+ENV ENVIRONMENT=development
+
+# Create directory for git repository
+RUN mkdir -p /opt/plotweaver/bff-repo
+
+# Expose FastAPI port
+EXPOSE 8000
+
+# Run FastAPI with uvicorn in development mode with reload
+CMD ["uvicorn", "bff.server.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+# Production stage
+FROM base AS production
+WORKDIR /app
+
 # Copy application code
-COPY src/ src/
+COPY . .
 
 # Create directory for git repository
 RUN mkdir -p /opt/plotweaver/bff-repo
 
 # Set environment variables
-ENV PYTHONPATH=/app/src
+ENV PYTHONPATH=/app:/app/bff
 ENV GIT_REPO_PATH=/opt/plotweaver/bff-repo
 
 # Expose FastAPI port
 EXPOSE 8000
 
 # Run FastAPI with uvicorn
-CMD ["uvicorn", "src.server.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "bff.server.main:app", "--host", "0.0.0.0", "--port", "8000"]

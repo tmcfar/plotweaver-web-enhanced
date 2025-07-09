@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, patch
 from pathlib import Path
-from src.preview.capture import capture_preview
+from bff.preview.capture import capture_preview
 
 
 class TestCapturePreview:
