@@ -47,7 +47,10 @@ export function useGitWebSocket(projectId: string): GitWebSocketHook {
   }, [projectId, queryClient]);
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken') || 'development-token';
+    // Follow existing auth pattern
+    let token = localStorage.getItem('auth_token') || 
+                sessionStorage.getItem('auth_token') || 
+                'development-token';
     
     if (projectId) {
       client.connect(projectId, token);

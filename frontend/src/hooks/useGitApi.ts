@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import GitApiClient from '@/lib/api/git';
+import { authenticatedGitApi } from '@/lib/api/gitAuthClient';
 import { FileContent, DirectoryTree, FileHistory } from '@/types/git';
 
 export function useGitApi() {
-  const [gitApi] = useState(() => new GitApiClient());
-  return gitApi;
+  // Use the authenticated singleton instance
+  return authenticatedGitApi;
 }
 
 export function useFileContent(projectId: string, filePath: string) {

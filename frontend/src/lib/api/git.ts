@@ -15,13 +15,36 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_BFF_URL || 'http://localhost:8000';
 
 class GitApiClient {
   private baseURL: string;
-  private authToken: string;
   private cache: GitCache;
 
   constructor(baseURL: string = API_BASE_URL) {
     this.baseURL = baseURL;
-    this.authToken = localStorage.getItem('authToken') || '';
     this.cache = gitCache;
+  }
+
+  private getAuthToken(): string | null {
+    // Follow existing auth pattern: localStorage -> sessionStorage -> cookies
+    let token = localStorage.getItem('auth_token');
+    
+    if (!token) {
+      token = sessionStorage.getItem('auth_token');
+    }
+    
+    if (!token) {
+      // Check cookies as fallback
+      const cookies = document.cookie.split('; ');
+      const authCookie = cookies.find(cookie => cookie.startsWith('auth_token='));
+      if (authCookie) {
+        token = authCookie.split('=')[1];
+      }
+    }
+    
+    return token;
+  }
+
+  private getSessionId(): string | null {
+    // Include session ID following existing pattern
+    return sessionStorage.getItem('plotweaver_session_id') || localStorage.getItem('plotweaver_session_id');
   }
 
   private async request<T>(
@@ -29,13 +52,36 @@ class GitApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    const headers = {
+    const token = this.getAuthToken();
+    const sessionId = this.getSessionId();
+    
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${this.authToken}`,
-      ...options.headers,
+      ...options.headers as Record<string, string>,
     };
 
+    // Add auth header if token available
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Add session header if available
+    if (sessionId) {
+      headers['X-Session-ID'] = sessionId;
+    }
+
     const response = await fetch(url, { ...options, headers });
+    
+    // Handle 401 Unauthorized - token might be expired
+    if (response.status === 401 && token) {
+      // Clear potentially invalid token
+      localStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_token');
+      
+      // In a real app, you might want to trigger token refresh here
+      // For now, throw a more specific error
+      throw new Error('Authentication failed - please sign in again');
+    }
     
     if (!response.ok) {
       throw new Error(`API Error: ${response.status} ${response.statusText}`);
