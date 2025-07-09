@@ -2,8 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { File, Folder, GitCommit, ChevronRight, ChevronDown, Loader2 } from 'lucide-react';
+import { File, Folder, GitCommit, ChevronRight, ChevronDown, Loader2, Search } from 'lucide-react';
 import { gitApi, TreeItem } from '@/lib/api/git';
+import { useProjectTree } from '@/hooks/useGitApi';
+import { DirectoryNode } from '@/types/git';
 import { cn } from '@/lib/utils';
 
 interface GitFileTreeProps {
@@ -24,13 +26,9 @@ export function GitFileTree({
   className 
 }: GitFileTreeProps) {
   const [expanded, setExpanded] = useState<ExpandedState>({ '': true });
+  const [searchTerm, setSearchTerm] = useState('');
   
-  const { data: rootTree, isLoading, error } = useQuery({
-    queryKey: ['git', 'tree', projectId, ''],
-    queryFn: () => gitApi.getTree(projectId, ''),
-    refetchInterval: 30000, // Poll every 30s for updates
-    retry: 2,
-  });
+  const { tree, loading, error } = useProjectTree(projectId, '');
 
   const { data: expandedTrees } = useQuery({
     queryKey: ['git', 'trees', projectId, Object.keys(expanded).filter(path => expanded[path] && path !== '')],
@@ -57,11 +55,16 @@ export function GitFileTree({
     }));
   };
 
-  const renderTreeItem = (item: TreeItem, depth = 0) => {
+  const renderTreeItem = (item: DirectoryNode | TreeItem, depth = 0) => {
     const isExpanded = expanded[item.path] || false;
     const isSelected = selectedPath === item.path;
     const Icon = item.type === 'directory' ? Folder : File;
     const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+
+    // Filter search if applicable
+    if (searchTerm && !item.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return null;
+    }
 
     return (
       <div key={item.path} className="select-none">
@@ -116,7 +119,7 @@ export function GitFileTree({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className={cn('flex items-center justify-center p-4', className)}>
         <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -139,7 +142,7 @@ export function GitFileTree({
     );
   }
 
-  if (!rootTree || rootTree.length === 0) {
+  if (!tree || !tree.tree || tree.tree.length === 0) {
     return (
       <div className={cn('p-4 text-center text-gray-500 text-sm', className)}>
         <Folder className="w-8 h-8 mx-auto mb-2 text-gray-400" />
@@ -156,7 +159,28 @@ export function GitFileTree({
           <GitCommit className="w-3 h-3" />
           Project Files
         </div>
-        {rootTree.map(item => renderTreeItem(item))}
+        
+        {/* Search bar */}
+        <div className="relative mb-2">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search files..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* Breadcrumb navigation */}
+        {tree.path && (
+          <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+            <span>/</span>
+            <span>{tree.path}</span>
+          </div>
+        )}
+
+        {tree.tree.map(item => renderTreeItem(item))}
       </div>
     </div>
   );
