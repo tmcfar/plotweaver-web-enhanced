@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { File, Folder, GitCommit, ChevronRight, ChevronDown, Loader2, Search } from 'lucide-react';
 import { gitApi, TreeItem } from '@/lib/api/git';
 import { useProjectTree } from '@/hooks/useGitApi';
+import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 import { DirectoryNode } from '@/types/git';
 import { cn } from '@/lib/utils';
 
@@ -27,6 +28,8 @@ export function GitFileTree({
 }: GitFileTreeProps) {
   const [expanded, setExpanded] = useState<ExpandedState>({ '': true });
   const [searchTerm, setSearchTerm] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   
   const { tree, loading, error } = useProjectTree(projectId, '');
 
@@ -66,11 +69,43 @@ export function GitFileTree({
       return null;
     }
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      switch (e.key) {
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          if (item.type === 'directory') {
+            toggleExpanded(item.path);
+          } else {
+            onFileSelect(item.path);
+          }
+          break;
+        case 'ArrowRight':
+          if (item.type === 'directory' && !isExpanded) {
+            e.preventDefault();
+            toggleExpanded(item.path);
+          }
+          break;
+        case 'ArrowLeft':
+          if (item.type === 'directory' && isExpanded) {
+            e.preventDefault();
+            toggleExpanded(item.path);
+          }
+          break;
+      }
+    };
+
     return (
       <div key={item.path} className="select-none">
         <div
+          role={item.type === 'directory' ? 'treeitem' : 'option'}
+          tabIndex={0}
+          aria-selected={isSelected}
+          aria-expanded={item.type === 'directory' ? isExpanded : undefined}
+          aria-label={`${item.type === 'directory' ? 'Folder' : 'File'}: ${item.name}${item.size ? `, ${formatFileSize(item.size)}` : ''}`}
+          aria-level={depth + 1}
           className={cn(
-            'flex items-center gap-2 p-1 hover:bg-gray-100 cursor-pointer rounded-sm text-sm',
+            'flex items-center gap-2 p-1 hover:bg-gray-100 cursor-pointer rounded-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500',
             isSelected && 'bg-blue-100 text-blue-800',
             'transition-colors duration-150'
           )}
@@ -82,26 +117,31 @@ export function GitFileTree({
               onFileSelect(item.path);
             }
           }}
+          onKeyDown={handleKeyDown}
         >
           {item.type === 'directory' && (
-            <ChevronIcon className="w-3 h-3 text-gray-500" />
+            <ChevronIcon 
+              className="w-3 h-3 text-gray-500" 
+              aria-hidden="true"
+            />
           )}
           <Icon className={cn(
             'w-4 h-4',
             item.type === 'directory' ? 'text-blue-600' : 'text-gray-600'
-          )} />
+          )} 
+          aria-hidden="true" />
           <span className="flex-1 truncate">{item.name}</span>
           {item.type === 'file' && item.size && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400" aria-hidden="true">
               {formatFileSize(item.size)}
             </span>
           )}
-          <GitCommit className="w-3 h-3 text-gray-400 opacity-50" />
+          <GitCommit className="w-3 h-3 text-gray-400 opacity-50" aria-hidden="true" />
         </div>
 
         {/* Render children for expanded directories */}
         {item.type === 'directory' && isExpanded && expandedTrees?.[item.path] && (
-          <div>
+          <div role="group" aria-label={`Contents of ${item.name}`}>
             {expandedTrees[item.path].map(childItem => 
               renderTreeItem(childItem, depth + 1)
             )}
@@ -153,34 +193,58 @@ export function GitFileTree({
   }
 
   return (
-    <div className={cn('git-file-tree overflow-y-auto', className)}>
+    <div 
+      ref={containerRef}
+      className={cn('git-file-tree overflow-y-auto', className)}
+      role="application"
+      aria-label="Git file tree"
+    >
       <div className="p-2">
         <div className="text-xs font-medium text-gray-700 mb-2 flex items-center gap-2">
-          <GitCommit className="w-3 h-3" />
+          <GitCommit className="w-3 h-3" aria-hidden="true" />
           Project Files
         </div>
         
         {/* Search bar */}
         <div className="relative mb-2">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" aria-hidden="true" />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search files..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-7 pr-3 py-1 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+            aria-label="Search files in project"
+            aria-describedby="search-description"
           />
+          <div id="search-description" className="sr-only">
+            Type to filter files and folders in the project tree
+          </div>
         </div>
 
         {/* Breadcrumb navigation */}
         {tree.path && (
-          <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+          <nav aria-label="Current directory path" className="text-xs text-gray-500 mb-2 flex items-center gap-1">
             <span>/</span>
             <span>{tree.path}</span>
-          </div>
+          </nav>
         )}
 
-        {tree.tree.map(item => renderTreeItem(item))}
+        <div 
+          role="tree" 
+          aria-label="Project files and folders"
+          aria-multiselectable="false"
+          className="focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 rounded"
+        >
+          {tree.tree.map(item => renderTreeItem(item))}
+        </div>
+        
+        {/* Screen reader announcements */}
+        <div aria-live="polite" aria-atomic="true" className="sr-only">
+          {searchTerm && tree.tree.length === 0 && `No files found matching "${searchTerm}"`}
+          {searchTerm && tree.tree.length > 0 && `${tree.tree.length} file${tree.tree.length === 1 ? '' : 's'} found matching "${searchTerm}"`}
+        </div>
       </div>
     </div>
   );

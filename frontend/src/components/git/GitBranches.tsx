@@ -21,15 +21,21 @@ interface BranchCardProps {
 
 function BranchCard({ branch, isLocal, isCurrent, onSwitch }: BranchCardProps) {
   return (
-    <div className={cn(
-      'flex items-center justify-between p-2 rounded border transition-colors',
-      isCurrent ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
-    )}>
+    <div 
+      className={cn(
+        'flex items-center justify-between p-2 rounded border transition-colors',
+        isCurrent ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'
+      )}
+      role="option"
+      aria-selected={isCurrent}
+      aria-label={`${isLocal ? 'Local' : 'Remote'} branch: ${branch.name}${isCurrent ? ' (current)' : ''}`}
+    >
       <div className="flex items-center gap-2">
         <GitBranch className={cn(
           'w-4 h-4',
           isCurrent ? 'text-blue-600' : 'text-gray-600'
-        )} />
+        )} 
+        aria-hidden="true" />
         <span className={cn(
           'text-sm font-medium',
           isCurrent ? 'text-blue-900' : 'text-gray-900'
@@ -37,10 +43,10 @@ function BranchCard({ branch, isLocal, isCurrent, onSwitch }: BranchCardProps) {
           {branch.name}
         </span>
         {isCurrent && (
-          <Check className="w-3 h-3 text-blue-600" />
+          <Check className="w-3 h-3 text-blue-600" aria-label="Current branch" />
         )}
         {!isLocal && (
-          <span className="text-xs text-gray-500 bg-gray-100 px-1 rounded">
+          <span className="text-xs text-gray-500 bg-gray-100 px-1 rounded" aria-label="Remote branch">
             remote
           </span>
         )}
@@ -49,7 +55,8 @@ function BranchCard({ branch, isLocal, isCurrent, onSwitch }: BranchCardProps) {
       {!isCurrent && isLocal && onSwitch && (
         <button
           onClick={() => onSwitch(branch.name)}
-          className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded border border-blue-200 hover:border-blue-300"
+          className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded border border-blue-200 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label={`Switch to ${branch.name} branch`}
         >
           Switch
         </button>
