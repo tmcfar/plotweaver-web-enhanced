@@ -130,6 +130,44 @@ def setup_git_endpoints(app: FastAPI, manager):
             logger.error(f"Failed to search content: {e}")
             raise HTTPException(status_code=500, detail=str(e))
 
+    @app.get("/api/git/status/{project_id}")
+    async def get_repository_status(project_id: str):
+        """Get git repository status (modified files, staged files, etc.)"""
+        try:
+            status = await git_manager.get_status(project_id)
+            return {
+                "success": True,
+                "data": {
+                    "modified_files": status.get("modified", []),
+                    "staged_files": status.get("staged", []),
+                    "untracked_files": status.get("untracked", []),
+                    "current_branch": status.get("branch"),
+                    "is_clean": status.get("is_clean", True),
+                },
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        except Exception as e:
+            logger.error(f"Failed to get repository status: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/git/branches/{project_id}")
+    async def get_branches(project_id: str):
+        """Get list of git branches"""
+        try:
+            branches = await git_manager.get_branches(project_id)
+            return {
+                "success": True,
+                "data": {
+                    "branches": branches.get("all", []),
+                    "current_branch": branches.get("current"),
+                    "remote_branches": branches.get("remote", []),
+                },
+                "timestamp": datetime.now(UTC).isoformat(),
+            }
+        except Exception as e:
+            logger.error(f"Failed to get branches: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
     # Webhook endpoints
     def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool:
         """Verify GitHub webhook signature."""

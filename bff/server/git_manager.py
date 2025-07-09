@@ -206,7 +206,11 @@ class BFFGitManager:
                     logger.error(f"Failed to read scene file {scene_file}: {e}")
 
         # Sort by scene number
-        scenes.sort(key=lambda x: x["scene_number"])
+        scenes.sort(
+            key=lambda x: x["scene_number"]
+            if isinstance(x["scene_number"], (int, float))
+            else 0
+        )
 
         self._set_cache(cache_key, scenes)
         return scenes
@@ -328,3 +332,130 @@ class BFFGitManager:
                         )
 
         return results
+
+    async def get_status(self, project_id: str) -> Dict[str, Any]:
+        """Get repository status including modified, staged, and untracked files."""
+        await self.initialize()  # Ensure repository is initialized
+
+        try:
+            # Get repository status
+            cmd = ["git", "status", "--porcelain"]
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=self.local_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                logger.error(f"Git status failed: {stderr.decode()}")
+                raise RuntimeError(f"Git status failed: {stderr.decode()}")
+
+            # Parse status output
+            modified_files = []
+            staged_files = []
+            untracked_files = []
+
+            lines = stdout.decode().strip().split("\n")
+            for line in lines:
+                if line:
+                    status_code = line[:2]
+                    file_path = line[3:]
+
+                    if status_code[0] in ["M", "A", "D", "R", "C"]:  # Staged changes
+                        staged_files.append(file_path)
+                    if status_code[1] in ["M", "D"]:  # Modified in working directory
+                        modified_files.append(file_path)
+                    if status_code == "??":  # Untracked
+                        untracked_files.append(file_path)
+
+            # Get current branch
+            cmd = ["git", "branch", "--show-current"]
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=self.local_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            stdout, stderr = await proc.communicate()
+            current_branch = (
+                stdout.decode().strip() if proc.returncode == 0 else self.branch
+            )
+
+            is_clean = not (modified_files or staged_files or untracked_files)
+
+            return {
+                "modified": modified_files,
+                "staged": staged_files,
+                "untracked": untracked_files,
+                "branch": current_branch,
+                "is_clean": is_clean,
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get repository status: {e}")
+            raise
+
+    async def get_branches(self, project_id: str) -> Dict[str, Any]:
+        """Get all branches in the repository."""
+        await self.initialize()  # Ensure repository is initialized
+
+        try:
+            # Get local branches
+            cmd = ["git", "branch"]
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=self.local_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                logger.error(f"Git branch failed: {stderr.decode()}")
+                raise RuntimeError(f"Git branch failed: {stderr.decode()}")
+
+            local_branches = []
+            current_branch = None
+
+            lines = stdout.decode().strip().split("\n")
+            for line in lines:
+                line = line.strip()
+                if line.startswith("* "):
+                    current_branch = line[2:]
+                    local_branches.append(current_branch)
+                elif line:
+                    local_branches.append(line)
+
+            # Get remote branches
+            cmd = ["git", "branch", "-r"]
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                cwd=self.local_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            stdout, stderr = await proc.communicate()
+
+            remote_branches = []
+            if proc.returncode == 0:
+                lines = stdout.decode().strip().split("\n")
+                for line in lines:
+                    line = line.strip()
+                    if line and not line.startswith("origin/HEAD"):
+                        remote_branches.append(line)
+
+            return {
+                "all": local_branches,
+                "current": current_branch or self.branch,
+                "remote": remote_branches,
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to get branches: {e}")
+            raise

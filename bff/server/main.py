@@ -14,13 +14,14 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from ..preview.sanitizer import sanitize_html
-from ..auth.jwt_auth import websocket_auth_manager
-from ..auth.rate_limiter import rate_limiter
+from bff.preview.sanitizer import sanitize_html
+from bff.auth.jwt_auth import websocket_auth_manager
+from bff.auth.rate_limiter import rate_limiter
 from .constants import MAX_CONNECTIONS, MAX_MESSAGE_SIZE, HEARTBEAT_TIMEOUT
 from .bounded_collections import BoundedDict, BoundedSet
 from .worldbuilding_endpoints import router as worldbuilding_router
-from ..services.git_manager import GitRepoManager
+from .feedback_endpoints import router as feedback_router
+from bff.services.git_manager import GitRepoManager
 
 app = FastAPI(title="PlotWeaver Web Enhanced")
 
@@ -29,6 +30,7 @@ git_manager = GitRepoManager()
 
 # Include routers
 app.include_router(worldbuilding_router)
+app.include_router(feedback_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -567,6 +569,36 @@ async def get_audit_trail(project_id: str) -> List[Dict[str, Any]]:
     return lock_history.get(project_id, [])
 
 
+@app.post("/api/projects/{project_id}/locks/check-conflicts")
+async def check_lock_conflicts(project_id: str, request: Dict[str, Any]):
+    """Check for potential lock conflicts before applying."""
+    components = request.get("components", [])
+
+    try:
+        conflicts = []
+        for component_id in components:
+            # Check if component is already locked
+            if component_id in project_locks.get(project_id, {}):
+                existing_lock = project_locks[project_id][component_id]
+                conflicts.append(
+                    {
+                        "component_id": component_id,
+                        "conflict_type": "already_locked",
+                        "existing_lock": existing_lock.dict(),
+                        "can_override": existing_lock.canOverride
+                        and existing_lock.level != "frozen",
+                    }
+                )
+
+        return {
+            "success": True,
+            "data": {"conflicts": conflicts, "can_proceed": len(conflicts) == 0},
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # Mode-set endpoints
 @app.get("/api/user/mode-set")
 async def get_user_mode_set():
@@ -614,20 +646,22 @@ async def handle_webhook(request: Request):
     """Handle GitHub webhook to trigger git pull"""
     payload = await request.json()
     project_id = payload.get("project_id")
-    
+
     if not project_id:
         raise HTTPException(400, "Missing project_id")
-    
+
     # Pull latest changes
     result = await git_manager.pull_latest(project_id)
-    
+
     # Broadcast update via WebSocket
-    await manager.broadcast({
-        "type": "git_update",
-        "project_id": project_id,
-        "updated_files": result["updated_files"]
-    })
-    
+    await manager.broadcast(
+        {
+            "type": "git_update",
+            "project_id": project_id,
+            "updated_files": result["updated_files"],
+        }
+    )
+
     return {"status": "ok", "result": result}
 
 
@@ -697,7 +731,7 @@ async def enhanced_websocket_endpoint(
 
                     if channel.startswith("subscribe:"):
                         project_id = channel.replace("subscribe:", "")
-                        manager.subscribe_to_project(client_id, project_id)
+                        await manager.subscribe_to_project(client_id, project_id)
                         await manager.send_personal_message(
                             {
                                 "channel": "subscription",
