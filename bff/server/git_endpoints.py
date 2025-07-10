@@ -1,303 +1,221 @@
+"""
+Git read operations endpoints for PlotWeaver BFF.
+These endpoints handle reading from the local git repository cache.
+"""
+
+from fastapi import APIRouter, HTTPException, Depends
+from typing import Optional, List, Dict, Any
 import os
-import hmac
-import hashlib
-import logging
-from datetime import datetime, UTC
-from typing import Dict, Any
-from fastapi import FastAPI, HTTPException, Query, Request, Header
-from .git_manager import BFFGitManager
 
-logger = logging.getLogger(__name__)
+from ..auth.jwt_auth import get_current_user
+from bff.services.git_manager import GitRepoManager
 
-# Add after your existing imports and before app initialization
-GIT_REPO_URL = os.getenv("GIT_REPO_URL", "https://github.com/example/novel.git")
-GIT_BRANCH = os.getenv("GIT_BRANCH", "main")
-GIT_SSH_KEY_PATH = os.getenv("GIT_SSH_KEY_PATH")
-GITHUB_WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "")
-GITLAB_WEBHOOK_TOKEN = os.getenv("GITLAB_WEBHOOK_TOKEN", "")
+router = APIRouter()
 
-# Initialize git manager
-git_manager = BFFGitManager(
-    repo_url=GIT_REPO_URL,
-    branch=GIT_BRANCH,
-    ssh_key_path=GIT_SSH_KEY_PATH,
-    cache_ttl=int(os.getenv("GIT_CACHE_TTL", "300")),
-)
+# Initialize git manager instance
+git_manager = GitRepoManager()
 
 
-def setup_git_endpoints(app: FastAPI, manager):
-    """Setup git endpoints on the FastAPI app."""
+@router.get("/api/git/content/{project_id}/{file_path:path}")
+async def get_file_content(
+    project_id: str,
+    file_path: str,
+    ref: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """
+    Get file content from the local git repository.
+    
+    Args:
+        project_id: The project identifier
+        file_path: Path to the file within the repository
+        ref: Optional git ref (branch, tag, commit) to read from
+        
+    Returns:
+        Dict containing file content and metadata
+    """
+    try:
+        result = await git_manager.get_file_content(project_id, file_path)
+        return result
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"File {file_path} not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Add startup event to initialize git repository
-    @app.on_event("startup")
-    async def startup_event():
-        """Initialize git repository on startup."""
-        try:
-            await git_manager.initialize()
-            logger.info("Git repository initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize git repository: {e}")
-            # Don't fail startup, but log the error
 
-    # Git read endpoints
-    @app.get("/api/git/characters")
-    async def get_characters():
-        """Get all characters from git repository."""
-        try:
-            characters = await git_manager.read_characters()
-            return {"characters": characters, "count": len(characters)}
-        except Exception as e:
-            logger.error(f"Failed to read characters: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+@router.get("/api/git/tree/{project_id}")
+async def get_project_tree(
+    project_id: str,
+    path: Optional[str] = "",
+    ref: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """
+    Get directory tree from the local git repository.
+    
+    Args:
+        project_id: The project identifier
+        path: Optional subdirectory path
+        ref: Optional git ref to read from
+        
+    Returns:
+        Dict containing tree structure
+    """
+    try:
+        tree = await git_manager.get_tree(project_id, path or "")
+        return tree
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    @app.get("/api/git/plot")
-    async def get_plot_outline():
-        """Get plot outline from git repository."""
-        try:
-            plot = await git_manager.read_plot_outline()
-            return {"plot_outline": plot}
-        except Exception as e:
-            logger.error(f"Failed to read plot: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
 
-    @app.get("/api/git/chapters")
-    async def get_chapters():
-        """Get list of all chapters."""
-        try:
-            chapters_dir = git_manager.local_path / "content" / "chapters"
-            chapters = []
-
-            if chapters_dir.exists():
-                for chapter_dir in sorted(chapters_dir.iterdir()):
-                    if chapter_dir.is_dir() and chapter_dir.name.startswith("chapter-"):
-                        chapter_num = chapter_dir.name.replace("chapter-", "")
-                        scene_count = len(list(chapter_dir.glob("scene-*.md")))
-                        chapters.append(
-                            {
-                                "chapter": chapter_num,
-                                "name": chapter_dir.name,
-                                "scene_count": scene_count,
-                            }
-                        )
-
-            return {"chapters": chapters}
-        except Exception as e:
-            logger.error(f"Failed to list chapters: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @app.get("/api/git/chapters/{chapter}/scenes")
-    async def get_chapter_scenes(chapter: str):
-        """Get all scenes for a chapter from git repository."""
-        try:
-            scenes = await git_manager.read_chapter_scenes(chapter)
-            return {
-                "chapter": chapter,
-                "scenes": scenes,
-                "count": len(scenes),
-                "total_words": sum(s["word_count"] for s in scenes),
-            }
-        except Exception as e:
-            logger.error(f"Failed to read scenes for chapter {chapter}: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @app.get("/api/git/world")
-    async def get_world_data():
-        """Get world-building data from git repository."""
-        try:
-            world_data = await git_manager.read_world_data()
-            return {"world": world_data}
-        except Exception as e:
-            logger.error(f"Failed to read world data: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @app.get("/api/git/info")
-    async def get_repository_info():
-        """Get information about the git repository."""
-        try:
-            info = await git_manager.get_repository_info()
-            return info
-        except Exception as e:
-            logger.error(f"Failed to get repository info: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @app.get("/api/git/search")
-    async def search_content(q: str = Query(..., description="Search query")):
-        """Search for content in the repository."""
-        try:
-            results = await git_manager.search_content(q)
-            return {"query": q, "results": results, "count": len(results)}
-        except Exception as e:
-            logger.error(f"Failed to search content: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @app.get("/api/git/status/{project_id}")
-    async def get_repository_status(project_id: str):
-        """Get git repository status (modified files, staged files, etc.)"""
-        try:
-            status = await git_manager.get_status(project_id)
-            return {
-                "success": True,
-                "data": {
-                    "modified_files": status.get("modified", []),
-                    "staged_files": status.get("staged", []),
-                    "untracked_files": status.get("untracked", []),
-                    "current_branch": status.get("branch"),
-                    "is_clean": status.get("is_clean", True),
-                },
-                "timestamp": datetime.now(UTC).isoformat(),
-            }
-        except Exception as e:
-            logger.error(f"Failed to get repository status: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-    @app.get("/api/git/branches/{project_id}")
-    async def get_branches(project_id: str):
-        """Get list of git branches"""
-        try:
-            branches = await git_manager.get_branches(project_id)
-            return {
-                "success": True,
-                "data": {
-                    "branches": branches.get("all", []),
-                    "current_branch": branches.get("current"),
-                    "remote_branches": branches.get("remote", []),
-                },
-                "timestamp": datetime.now(UTC).isoformat(),
-            }
-        except Exception as e:
-            logger.error(f"Failed to get branches: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-
-    # Webhook endpoints
-    def verify_github_signature(payload: bytes, signature: str, secret: str) -> bool:
-        """Verify GitHub webhook signature."""
-        if not signature.startswith("sha256="):
-            return False
-
-        expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
-
-        return hmac.compare_digest(signature[7:], expected)
-
-    @app.post("/api/webhooks/github")
-    async def handle_github_webhook(
-        request: Request, x_hub_signature_256: str = Header(None)
-    ):
-        """Handle GitHub webhook notifications."""
-        if not GITHUB_WEBHOOK_SECRET:
-            raise HTTPException(status_code=403, detail="Webhook secret not configured")
-
-        # Get raw payload
-        payload = await request.body()
-
-        # Verify signature
-        if not verify_github_signature(
-            payload, x_hub_signature_256, GITHUB_WEBHOOK_SECRET
-        ):
-            raise HTTPException(status_code=403, detail="Invalid signature")
-
-        # Parse payload
-        data = await request.json()
-        event_type = request.headers.get("X-GitHub-Event", "")
-
-        # Handle push events
-        if event_type == "push":
-            branch = data.get("ref", "").replace("refs/heads/", "")
-            if branch == git_manager.branch:
-                logger.info(f"Received push event for branch {branch}")
-
-                # Pull latest changes
-                try:
-                    await git_manager.pull_and_invalidate_cache()
-
-                    # Broadcast update to connected clients
-                    await manager.broadcast_to_project(
-                        {
-                            "channel": "git_update",
-                            "data": {
-                                "type": "push",
-                                "branch": branch,
-                                "commit": data.get("after"),
-                                "timestamp": datetime.now(UTC).isoformat(),
-                            },
-                        },
-                        "all",  # Broadcast to all projects
-                    )
-
-                    return {"status": "success", "message": "Repository updated"}
-                except Exception as e:
-                    logger.error(f"Failed to pull changes: {e}")
-                    return {"status": "error", "message": str(e)}
-
-        return {"status": "ignored", "event": event_type}
-
-    @app.post("/api/webhooks/gitlab")
-    async def handle_gitlab_webhook(
-        request: Request, x_gitlab_token: str = Header(None)
-    ):
-        """Handle GitLab webhook notifications."""
-        if not GITLAB_WEBHOOK_TOKEN:
-            raise HTTPException(status_code=403, detail="Webhook token not configured")
-
-        # Verify token
-        if x_gitlab_token != GITLAB_WEBHOOK_TOKEN:
-            raise HTTPException(status_code=403, detail="Invalid token")
-
-        # Parse payload
-        data = await request.json()
-        event_type = data.get("object_kind", "")
-
-        # Handle push events
-        if event_type == "push":
-            branch = data.get("ref", "").replace("refs/heads/", "")
-            if branch == git_manager.branch:
-                logger.info(f"Received push event for branch {branch}")
-
-                # Pull latest changes
-                try:
-                    await git_manager.pull_and_invalidate_cache()
-
-                    # Broadcast update
-                    await manager.broadcast_to_project(
-                        {
-                            "channel": "git_update",
-                            "data": {
-                                "type": "push",
-                                "branch": branch,
-                                "commit": data.get("after"),
-                                "timestamp": datetime.now(UTC).isoformat(),
-                            },
-                        },
-                        "all",
-                    )
-
-                    return {"status": "success", "message": "Repository updated"}
-                except Exception as e:
-                    logger.error(f"Failed to pull changes: {e}")
-                    return {"status": "error", "message": str(e)}
-
-        return {"status": "ignored", "event": event_type}
-
-    # Agent progress endpoint (for backend to notify BFF)
-    @app.post("/api/agent-progress/{project_id}")
-    async def receive_agent_progress(project_id: str, progress_data: Dict[str, Any]):
-        """
-        Receive progress updates from backend and broadcast via WebSocket.
-
-        This endpoint is called by the backend agent execution service
-        to send real-time progress updates to connected clients.
-        """
-        # Broadcast to all clients subscribed to this project
-        await manager.broadcast_to_project(
-            {"channel": f"agent_progress:{project_id}", "data": progress_data},
+@router.get("/api/git/diff/{project_id}")
+async def get_diff(
+    project_id: str,
+    base_ref: Optional[str] = None,
+    head_ref: Optional[str] = "HEAD",
+    current_user: dict = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """
+    Get diff between two refs in the repository.
+    
+    Args:
+        project_id: The project identifier
+        base_ref: Base reference for comparison (defaults to HEAD~1)
+        head_ref: Head reference for comparison (defaults to HEAD)
+        
+    Returns:
+        Dict containing diff information
+    """
+    try:
+        diff = await git_manager.get_diff(
             project_id,
+            base_ref or "HEAD~1",
+            head_ref
         )
+        return diff
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-        # If generation completed, trigger cache invalidation
-        if progress_data.get("status") == "completed":
-            try:
-                await git_manager.pull_and_invalidate_cache()
-                logger.info("Cache invalidated after content generation")
-            except Exception as e:
-                logger.error(f"Failed to invalidate cache: {e}")
 
-        return {"status": "broadcasted", "project_id": project_id}
+@router.get("/api/git/history/{project_id}/{file_path:path}")
+async def get_file_history(
+    project_id: str,
+    file_path: str,
+    limit: int = 10,
+    current_user: dict = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """
+    Get commit history for a specific file.
+    
+    Args:
+        project_id: The project identifier
+        file_path: Path to the file
+        limit: Maximum number of commits to return
+        
+    Returns:
+        Dict containing commit history
+    """
+    try:
+        history = await git_manager.get_file_history(project_id, file_path, limit)
+        return {
+            "history": history,
+            "file_path": file_path,
+            "project_id": project_id,
+        }
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"File {file_path} not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# Specialized content endpoints for PlotWeaver
+# These endpoints read specific file patterns from the repository
+@router.get("/api/git/characters/{project_id}")
+async def get_characters(
+    project_id: str,
+    current_user: dict = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Get all character files from the repository."""
+    try:
+        # Read character files from characters/ directory
+        tree = await git_manager.get_tree(project_id, "characters")
+        characters = []
+        
+        for item in tree:
+            if item["type"] == "file" and item["name"].endswith((".yaml", ".yml", ".json")):
+                content = await git_manager.get_file_content(project_id, item["path"])
+                characters.append({
+                    "name": item["name"].replace(".yaml", "").replace(".yml", "").replace(".json", ""),
+                    "path": item["path"],
+                    "content": content["content"]
+                })
+        
+        return {
+            "characters": characters,
+            "project_id": project_id,
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/git/scenes/{project_id}")
+async def get_scenes(
+    project_id: str,
+    chapter: Optional[str] = None,
+    current_user: dict = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Get scene files, optionally filtered by chapter."""
+    try:
+        # Read scene files from scenes/ directory
+        path = f"scenes/{chapter}" if chapter else "scenes"
+        tree = await git_manager.get_tree(project_id, path)
+        scenes = []
+        
+        for item in tree:
+            if item["type"] == "file" and item["name"].endswith(".md"):
+                content = await git_manager.get_file_content(project_id, item["path"])
+                scenes.append({
+                    "name": item["name"].replace(".md", ""),
+                    "path": item["path"],
+                    "content": content["content"]
+                })
+        
+        return {
+            "scenes": scenes,
+            "project_id": project_id,
+            "chapter": chapter,
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/api/git/worldbuilding/{project_id}")
+async def get_worldbuilding(
+    project_id: str,
+    current_user: dict = Depends(get_current_user),
+) -> Dict[str, Any]:
+    """Get worldbuilding data from the repository."""
+    try:
+        # Read worldbuilding files from worldbuilding/ directory
+        tree = await git_manager.get_tree(project_id, "worldbuilding")
+        worldbuilding = {}
+        
+        for item in tree:
+            if item["type"] == "file" and item["name"].endswith((".yaml", ".yml", ".json")):
+                content = await git_manager.get_file_content(project_id, item["path"])
+                category = item["name"].replace(".yaml", "").replace(".yml", "").replace(".json", "")
+                worldbuilding[category] = content["content"]
+        
+        return {
+            "worldbuilding": worldbuilding,
+            "project_id": project_id,
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

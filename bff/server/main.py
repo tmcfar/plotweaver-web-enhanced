@@ -21,9 +21,33 @@ from .constants import MAX_CONNECTIONS, MAX_MESSAGE_SIZE, HEARTBEAT_TIMEOUT
 from .bounded_collections import BoundedDict, BoundedSet
 from .worldbuilding_endpoints import router as worldbuilding_router
 from .feedback_endpoints import router as feedback_router
+from .git_endpoints import router as git_read_router
+from .write_proxy import router as write_proxy_router
+from .story_proxy import router as story_proxy_router
 from bff.services.git_manager import GitRepoManager
 
-app = FastAPI(title="PlotWeaver Web Enhanced")
+app = FastAPI(
+    title="PlotWeaver BFF (Backend for Frontend)",
+    description="""
+    Backend for Frontend service for PlotWeaver web application.
+    
+    ## Overview
+    This BFF provides endpoints for:
+    - Real-time collaboration via WebSockets
+    - Git repository management
+    - File preview and capture
+    - User feedback and analytics
+    - Worldbuilding assistance
+    
+    ## Real-time Features
+    Supports WebSocket connections for real-time collaboration and updates.
+    """,
+    version="2.0.0",
+    servers=[
+        {"url": "http://localhost:8000", "description": "Local development BFF"},
+        {"url": "https://bff.plotweaver.io", "description": "Production BFF"}
+    ]
+)
 
 # Initialize Git manager
 git_manager = GitRepoManager()
@@ -31,6 +55,9 @@ git_manager = GitRepoManager()
 # Include routers
 app.include_router(worldbuilding_router)
 app.include_router(feedback_router)
+app.include_router(git_read_router, tags=["git-read"])
+app.include_router(write_proxy_router, prefix="/api", tags=["write-proxy"])
+app.include_router(story_proxy_router, prefix="/api/v1", tags=["story-proxy"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -616,29 +643,7 @@ async def set_user_mode_set(mode_set_data: Dict[str, Any]):
     return {"status": "updated", "modeSetId": mode_set_id}
 
 
-# Git API endpoints
-@app.get("/api/git/content/{project_id}/{file_path:path}")
-async def get_file_content(project_id: str, file_path: str):
-    """Get file content from git repository"""
-    return await git_manager.get_file_content(project_id, file_path)
-
-
-@app.get("/api/git/tree/{project_id}")
-async def get_project_tree(project_id: str, path: str = ""):
-    """Get directory tree from git repository"""
-    return await git_manager.get_tree(project_id, path)
-
-
-@app.get("/api/git/diff/{project_id}/{base_ref}/{head_ref}")
-async def get_diff(project_id: str, base_ref: str, head_ref: str = "HEAD"):
-    """Get diff between two refs"""
-    return await git_manager.get_diff(project_id, base_ref, head_ref)
-
-
-@app.get("/api/git/history/{project_id}/{file_path:path}")
-async def get_file_history(project_id: str, file_path: str, limit: int = 10):
-    """Get commit history for a file"""
-    return await git_manager.get_file_history(project_id, file_path, limit)
+# Git endpoints are now in git_endpoints.py
 
 
 @app.post("/api/webhooks/github")

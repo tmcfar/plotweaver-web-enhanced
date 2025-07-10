@@ -128,8 +128,9 @@ export const bffApi = {
     },
   },
 
-  // Git integration endpoints
+  // Git integration endpoints - Read operations (BFF handles these)
   git: {
+    // File operations
     getFileContent: async (projectId: string, filePath: string) => {
       const response = await bffClient.get(`/api/git/content/${projectId}/${filePath}`);
       return response.data;
@@ -148,17 +149,58 @@ export const bffApi = {
       });
       return response.data;
     },
-    getDiff: async (projectId: string, baseRef: string, headRef: string) => {
-      const response = await bffClient.get(`/api/git/diff/${projectId}/${baseRef}/${headRef}`);
+    getDiff: async (projectId: string, baseRef?: string, headRef: string = 'HEAD') => {
+      const url = baseRef 
+        ? `/api/git/diff/${projectId}?base_ref=${baseRef}&head_ref=${headRef}`
+        : `/api/git/diff/${projectId}?head_ref=${headRef}`;
+      const response = await bffClient.get(url);
       return response.data;
     },
-    // Backend endpoints now implemented
-    getRepositoryStatus: async (projectId: string) => {
-      const response = await bffClient.get(`/api/git/status/${projectId}`);
+    
+    // Specialized PlotWeaver content
+    getCharacters: async (projectId: string) => {
+      const response = await bffClient.get(`/api/git/characters/${projectId}`);
       return response.data;
     },
-    getBranches: async (projectId: string) => {
-      const response = await bffClient.get(`/api/git/branches/${projectId}`);
+    getScenes: async (projectId: string, chapter?: string) => {
+      const url = `/api/git/scenes/${projectId}`;
+      const response = await bffClient.get(url, {
+        params: chapter ? { chapter } : {}
+      });
+      return response.data;
+    },
+    getWorldbuilding: async (projectId: string) => {
+      const response = await bffClient.get(`/api/git/worldbuilding/${projectId}`);
+      return response.data;
+    },
+    
+    // Write operations (proxied to backend)
+    commit: async (projectId: string, data: { message: string; files?: string[] }) => {
+      const response = await bffClient.post(`/api/git/commit/${projectId}`, data);
+      return response.data;
+    },
+    push: async (projectId: string, data?: { branch?: string; force?: boolean }) => {
+      const response = await bffClient.post(`/api/git/push/${projectId}`, data || {});
+      return response.data;
+    },
+    createBranch: async (projectId: string, data: { name: string; source_branch?: string }) => {
+      const response = await bffClient.post(`/api/git/branch/${projectId}`, data);
+      return response.data;
+    },
+    switchBranch: async (projectId: string, data: { branch_name: string; create_if_missing?: boolean }) => {
+      const response = await bffClient.put(`/api/git/branch/${projectId}/switch`, data);
+      return response.data;
+    },
+    createFile: async (projectId: string, data: { path: string; content: string; encoding?: string }) => {
+      const response = await bffClient.post(`/api/git/files/${projectId}`, data);
+      return response.data;
+    },
+    updateFile: async (projectId: string, filePath: string, data: { content: string; encoding?: string }) => {
+      const response = await bffClient.put(`/api/git/files/${projectId}/${filePath}`, data);
+      return response.data;
+    },
+    deleteFile: async (projectId: string, filePath: string) => {
+      const response = await bffClient.delete(`/api/git/files/${projectId}/${filePath}`);
       return response.data;
     },
   },

@@ -1,0 +1,255 @@
+"""Story generation API endpoints."""
+
+import uuid
+from datetime import datetime, UTC
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException, Response
+from fastapi.responses import StreamingResponse
+
+from .story_models import (
+    StoryGenerationRequest,
+    GenerationStartResponse,
+    GenerationStatusResponse,
+    Story,
+    GenerationStatus,
+    GenerationStage,
+    AgentStatus,
+    AgentStatusItem,
+    ProgressInfo,
+    GenerationResult,
+    ErrorResponse,
+    ValidationError,
+)
+
+router = APIRouter(prefix="/api/v1", tags=["generation", "stories", "monitoring"])
+
+# In-memory storage for demo purposes
+# In production, this would be replaced with a database
+generations: Dict[str, Dict[str, Any]] = {}
+stories: Dict[str, Story] = {}
+
+
+@router.post(
+    "/stories/generate",
+    response_model=GenerationStartResponse,
+    status_code=202,
+    summary="Generate a new story",
+    description="""
+    Initiates a new story generation process. Returns immediately with a generation ID
+    that can be used to monitor progress.
+    """,
+    responses={
+        202: {"description": "Generation started successfully"},
+        400: {"model": ErrorResponse, "description": "Bad request"},
+        422: {"model": ValidationError, "description": "Validation error"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+    }
+)
+async def generate_story(request: StoryGenerationRequest) -> GenerationStartResponse:
+    """Start a new story generation."""
+    try:
+        # Generate unique ID
+        generation_id = f"gen_{uuid.uuid4()}"
+        
+        # Create generation record
+        generation_data = {
+            "id": generation_id,
+            "request": request.model_dump(),
+            "status": GenerationStatus.queued,
+            "started_at": datetime.now(UTC),
+            "progress": ProgressInfo(
+                percentage=0,
+                current_stage=GenerationStage.initialization,
+                agent_status=[]
+            ),
+            "result": None
+        }
+        
+        generations[generation_id] = generation_data
+        
+        # Estimate duration based on story length
+        duration_map = {
+            "short": 180,   # 3 minutes
+            "medium": 300,  # 5 minutes
+            "long": 600     # 10 minutes
+        }
+        estimated_duration = duration_map.get(request.length.value, 300)
+        
+        return GenerationStartResponse(
+            generation_id=generation_id,
+            status=GenerationStatus.queued.value,
+            estimated_duration=estimated_duration,
+            stream_url=f"/api/v1/generations/{generation_id}/stream"
+        )
+        
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/generations/{generation_id}",
+    response_model=GenerationStatusResponse,
+    summary="Get generation status",
+    description="Retrieves the current status and progress of a story generation",
+    responses={
+        200: {"description": "Generation status retrieved"},
+        404: {"model": ErrorResponse, "description": "Generation not found"},
+    }
+)
+async def get_generation_status(generation_id: str) -> GenerationStatusResponse:
+    """Get the status of a generation."""
+    if generation_id not in generations:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    
+    gen_data = generations[generation_id]
+    
+    return GenerationStatusResponse(
+        generation_id=generation_id,
+        status=gen_data["status"],
+        started_at=gen_data["started_at"],
+        completed_at=gen_data.get("completed_at"),
+        progress=gen_data.get("progress"),
+        result=gen_data.get("result")
+    )
+
+
+@router.get(
+    "/generations/{generation_id}/stream",
+    summary="Stream generation progress",
+    description="""
+    Server-Sent Events endpoint for real-time generation progress updates.
+    
+    ## Event Types
+    - `progress`: Generation progress updates
+    - `agent`: Agent execution updates  
+    - `complete`: Generation completed
+    - `error`: Generation failed
+    """,
+    responses={
+        200: {
+            "description": "SSE stream established",
+            "content": {
+                "text/event-stream": {
+                    "example": """event: progress
+data: {"stage": "plot_generation", "progress": 25, "message": "Generating plot outline..."}
+
+event: agent
+data: {"agent": "PlotAgent", "status": "executing", "progress": 50}
+
+event: complete
+data: {"storyId": "story_123", "duration": 287}"""
+                }
+            }
+        },
+        404: {"model": ErrorResponse, "description": "Generation not found"},
+    }
+)
+async def stream_generation(generation_id: str):
+    """Stream generation progress via Server-Sent Events."""
+    if generation_id not in generations:
+        raise HTTPException(status_code=404, detail="Generation not found")
+    
+    async def generate_events():
+        """Generate SSE events for the generation process."""
+        gen_data = generations[generation_id]
+        
+        # Simulate generation progress
+        stages = [
+            (GenerationStage.initialization, 10),
+            (GenerationStage.concept, 25),
+            (GenerationStage.plot, 50),
+            (GenerationStage.characters, 75),
+            (GenerationStage.scenes, 90),
+            (GenerationStage.quality_check, 100)
+        ]
+        
+        for stage, progress in stages:
+            # Update generation status
+            gen_data["progress"] = ProgressInfo(
+                percentage=progress,
+                current_stage=stage,
+                agent_status=[
+                    AgentStatusItem(
+                        agent=f"{stage.value.title()}Agent",
+                        status=AgentStatus.executing if progress < 100 else AgentStatus.completed
+                    )
+                ]
+            )
+            
+            if progress < 100:
+                gen_data["status"] = GenerationStatus.processing
+            
+            # Yield progress event
+            yield f"event: progress\n"
+            yield f"data: {{'stage': '{stage.value}', 'progress': {progress}, 'message': 'Processing {stage.value}...'}}\n\n"
+            
+            # Simulate processing time
+            import asyncio
+            await asyncio.sleep(1)
+        
+        # Mark as completed
+        gen_data["status"] = GenerationStatus.completed
+        gen_data["completed_at"] = datetime.now(UTC)
+        
+        # Create a mock story
+        story_id = f"story_{uuid.uuid4()}"
+        story = Story(
+            id=story_id,
+            title="Generated Story",
+            genre=gen_data["request"]["genre"],
+            content={
+                "plot": {"synopsis": "A generated story synopsis"},
+                "characters": [],
+                "scenes": []
+            },
+            created_at=datetime.now(UTC)
+        )
+        stories[story_id] = story
+        
+        gen_data["result"] = GenerationResult(
+            story_id=story_id,
+            success=True
+        )
+        
+        # Yield completion event
+        yield f"event: complete\n"
+        yield f"data: {{'storyId': '{story_id}', 'duration': 300}}\n\n"
+    
+    return StreamingResponse(
+        generate_events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
+
+
+@router.get(
+    "/stories/{story_id}",
+    response_model=Story,
+    summary="Get generated story",
+    description="Retrieves a complete generated story with all components",
+    responses={
+        200: {"description": "Story retrieved successfully"},
+        404: {"model": ErrorResponse, "description": "Story not found"},
+    }
+)
+async def get_story(
+    story_id: str,
+    include: Optional[List[str]] = None
+) -> Story:
+    """Get a generated story by ID."""
+    if story_id not in stories:
+        raise HTTPException(status_code=404, detail="Story not found")
+    
+    story = stories[story_id]
+    
+    # If include parameter is provided, modify the response accordingly
+    if include:
+        # This would filter the response based on the include parameter
+        # For now, just return the full story
+        pass
+    
+    return story

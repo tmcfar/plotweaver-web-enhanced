@@ -12,6 +12,7 @@ import {
 import { gitCache, GitCache } from '@/lib/git/GitCache';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BFF_URL || 'http://localhost:8000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 class GitApiClient {
   private baseURL: string;
@@ -191,6 +192,20 @@ class GitApiClient {
     return result;
   }
 
+  // Write operations - these go through the BFF proxy to backend
+  async commitChanges(projectId: string, data: { message: string; files?: string[] }): Promise<any> {
+    const result = await this.request<any>(`/api/git/commit/${projectId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    
+    // Invalidate caches after commit
+    this.cache.invalidate(projectId, 'repository_status');
+    this.cache.invalidatePattern(projectId);
+    
+    return result;
+  }
+
   async pushChanges(projectId: string, options: PushOptions): Promise<PushResult> {
     const result = await this.request<PushResult>(`/api/git/push/${projectId}`, {
       method: 'POST',
@@ -202,6 +217,93 @@ class GitApiClient {
     this.cache.invalidate(projectId, 'project_branches');
     // Invalidate file content and tree caches as they might have changed
     this.cache.invalidatePattern(projectId);
+    
+    return result;
+  }
+
+  async createBranch(projectId: string, data: { name: string; source_branch?: string }): Promise<any> {
+    const result = await this.request<any>(`/api/git/branch/${projectId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    
+    // Invalidate branch cache
+    this.cache.invalidate(projectId, 'project_branches');
+    
+    return result;
+  }
+
+  async switchBranch(projectId: string, data: { branch_name: string; create_if_missing?: boolean }): Promise<any> {
+    const result = await this.request<any>(`/api/git/branch/${projectId}/switch`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    
+    // Invalidate caches after branch switch
+    this.cache.invalidatePattern(projectId);
+    
+    return result;
+  }
+
+  async createFile(projectId: string, data: { path: string; content: string; encoding?: string }): Promise<any> {
+    const result = await this.request<any>(`/api/git/files/${projectId}`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+    
+    // Invalidate tree and status caches
+    this.cache.invalidate(projectId, 'project_tree');
+    this.cache.invalidate(projectId, 'repository_status');
+    
+    return result;
+  }
+
+  async updateFile(projectId: string, filePath: string, data: { content: string; encoding?: string }): Promise<any> {
+    const result = await this.request<any>(`/api/git/files/${projectId}/${filePath}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    
+    // Invalidate file and status caches
+    this.invalidateFileCache(projectId, filePath);
+    this.cache.invalidate(projectId, 'repository_status');
+    
+    return result;
+  }
+
+  async deleteFile(projectId: string, filePath: string): Promise<any> {
+    const result = await this.request<any>(`/api/git/files/${projectId}/${filePath}`, {
+      method: 'DELETE',
+    });
+    
+    // Invalidate caches
+    this.invalidateFileCache(projectId, filePath);
+    this.cache.invalidate(projectId, 'project_tree');
+    this.cache.invalidate(projectId, 'repository_status');
+    
+    return result;
+  }
+
+  async stageFiles(projectId: string, files: string[]): Promise<any> {
+    const result = await this.request<any>(`/api/git/stage/${projectId}`, {
+      method: 'POST',
+      body: JSON.stringify({ files }),
+    });
+    
+    // Invalidate status cache
+    this.cache.invalidate(projectId, 'repository_status');
+    
+    return result;
+  }
+
+  async unstageFiles(projectId: string, files: string[]): Promise<any> {
+    const result = await this.request<any>(`/api/git/unstage/${projectId}`, {
+      method: 'POST',
+      body: JSON.stringify({ files }),
+    });
+    
+    // Invalidate status cache
+    this.cache.invalidate(projectId, 'repository_status');
     
     return result;
   }
