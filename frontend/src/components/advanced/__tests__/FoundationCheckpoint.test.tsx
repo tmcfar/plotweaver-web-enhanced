@@ -1,158 +1,487 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { FoundationCheckpoint } from '@/components/advanced/FoundationCheckpoint';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-// Using Jest mocks
+import { render, screen, waitFor } from '@/test-utils/render'
+import { FoundationCheckpoint } from '../FoundationCheckpoint'
+import { useLockStore } from '@/lib/store/lockStore'
+import { useNotifications } from '@/components/notifications/NotificationSystem'
 
-// Mock fetch globally
-global.fetch = jest.fn();
+// Mock dependencies
+jest.mock('@/lib/store/lockStore')
+jest.mock('@/components/notifications/NotificationSystem')
 
-// Mock the API calls
-const mockFetchFoundationStatus = jest.fn();
-const mockLockComponents = jest.fn();
-const mockValidateFoundation = jest.fn();
+// Mock fetch
+global.fetch = jest.fn()
 
-jest.mock('@/lib/api/foundation', () => ({
-  fetchFoundationStatus: mockFetchFoundationStatus,
-  lockComponents: mockLockComponents,
-  validateFoundation: mockValidateFoundation,
-}));
-
-// Mock the store
-jest.mock('@/hooks/useFoundationStatus', () => ({
-  useFoundationStatus: () => ({
-    status: mockFoundationStatus,
-    isLoading: false,
-    refetch: jest.fn(),
-  }),
-}));
-
-const mockFoundationStatus = {
-  components: [
-    {
-      id: 'concept',
-      name: 'Concept',
-      status: 'ready',
-      completeness: 100,
-      issues: [],
-      locked: false,
-    },
-    {
-      id: 'plot',
-      name: 'Plot',
-      status: 'incomplete',
-      completeness: 75,
-      issues: ['Missing climax scene'],
-      locked: false,
-    },
-    {
-      id: 'characters',
-      name: 'Characters',
-      status: 'ready',
-      completeness: 100,
-      issues: [],
-      locked: true,
-    },
-  ],
-  overallReadiness: 85,
-  recommendations: [
-    'Complete plot structure before proceeding',
-    'Consider locking concept to prevent changes',
-  ],
-};
+const mockUseLockStore = useLockStore as jest.MockedFunction<typeof useLockStore>
+const mockUseNotifications = useNotifications as jest.MockedFunction<typeof useNotifications>
 
 describe('FoundationCheckpoint', () => {
-  let queryClient: QueryClient;
+  const defaultProps = {
+    projectId: 'test-project-1',
+    onCheckpointCreate: jest.fn(),
+    onComponentLock: jest.fn(),
+  }
+
+  const mockFoundationStatus = {
+    overall_ready: false,
+    readiness_score: 0.75,
+    components: [
+      {
+        id: 'setting-world',
+        name: 'World & Setting',
+        type: 'setting',
+        completeness: 0.9,
+        ready: true,
+        issues: [],
+        dependencies: []
+      },
+      {
+        id: 'characters-main',
+        name: 'Main Characters',
+        type: 'character',
+        completeness: 0.8,
+        ready: true,
+        issues: [],
+        dependencies: []
+      },
+      {
+        id: 'plot-structure',
+        name: 'Plot Structure',
+        type: 'plot',
+        completeness: 0.6,
+        ready: false,
+        issues: ['Missing Act 2 climax', 'Unclear character motivations'],
+        dependencies: ['characters-main']
+      }
+    ],
+    recommendations: [
+      'Complete plot structure before locking',
+      'Consider soft-locking characters to allow minor adjustments',
+      'Review world-building consistency'
+    ]
+  }
+
+  const mockLocks = {
+    'setting-world': { level: 'hard', id: 'lock-1' },
+  }
+
+  const mockAddNotification = jest.fn()
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    });
+    jest.clearAllMocks()
+    
+    mockUseLockStore.mockReturnValue({
+      locks: mockLocks,
+      addLock: jest.fn(),
+      removeLock: jest.fn(),
+      updateLock: jest.fn(),
+      clearLocks: jest.fn(),
+    })
 
-    // Mock fetch to reject and trigger fallback mock data
-    (global.fetch as jest.Mock).mockRejectedValue(new Error('API not available'));
-  });
+    mockUseNotifications.mockReturnValue({
+      addNotification: mockAddNotification,
+      notifications: [],
+      removeNotification: jest.fn(),
+      clearNotifications: jest.fn(),
+    })
 
-  const renderComponent = async () => {
-    let result;
-    await act(async () => {
-      result = render(
-        <QueryClientProvider client={queryClient}>
-          <FoundationCheckpoint 
-            projectId="test-project"
-            onCheckpointCreate={() => {}}
-            onComponentLock={() => {}}
-          />
-        </QueryClientProvider>
-      );
-    });
-    return result;
-  };
+    ;(global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => mockFoundationStatus
+    })
+  })
 
-  it('renders foundation status correctly', async () => {
-    await renderComponent();
+  describe('Component Readiness Display', () => {
+    it('displays overall readiness score', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
 
-    // Check overall readiness (readiness_score: 0.75 = 75%)
-    await waitFor(() => {
-      expect(screen.getByText('75%')).toBeInTheDocument();
-      expect(screen.getByText('Overall Readiness')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Overall Readiness')).toBeInTheDocument()
+        expect(screen.getByText('75%')).toBeInTheDocument()
+      })
+    })
 
-      // Check components from mock data
-      expect(screen.getByText('World & Setting')).toBeInTheDocument();
-      expect(screen.getByText('Main Characters')).toBeInTheDocument();
-      expect(screen.getByText('Plot Structure')).toBeInTheDocument();
-    });
-  });
+    it('displays all component types with their status', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
 
-  it('displays component status indicators', async () => {
-    await renderComponent();
+      await waitFor(() => {
+        expect(screen.getByText('World & Setting')).toBeInTheDocument()
+        expect(screen.getByText('90% complete')).toBeInTheDocument()
+        
+        expect(screen.getByText('Main Characters')).toBeInTheDocument()
+        expect(screen.getByText('80% complete')).toBeInTheDocument()
+        
+        expect(screen.getByText('Plot Structure')).toBeInTheDocument()
+        expect(screen.getByText('60% complete')).toBeInTheDocument()
+      })
+    })
 
-    await waitFor(() => {
-      // Check that component cards are rendered (simplified test)
-      expect(screen.getByText('World & Setting')).toBeInTheDocument();
-      expect(screen.getByText('Main Characters')).toBeInTheDocument();
-      expect(screen.getByText('Plot Structure')).toBeInTheDocument();
-    });
-  });
+    it('shows check icon for ready components', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
 
-  it('shows issues for incomplete components', async () => {
-    await renderComponent();
+      await waitFor(() => {
+        const settingComponent = screen.getByText('World & Setting').closest('.p-4')
+        const checkIcon = settingComponent?.querySelector('.lucide-check-circle-2')
+        expect(checkIcon).toBeInTheDocument()
+      })
+    })
 
-    await waitFor(() => {
-      expect(screen.getByText('Missing Act 2 climax')).toBeInTheDocument();
-      expect(screen.getByText('Unclear character motivations')).toBeInTheDocument();
-    });
-  });
+    it('shows warning icon for incomplete components', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
 
-  it('displays AI recommendations', async () => {
-    await renderComponent();
+      await waitFor(() => {
+        const plotComponent = screen.getByText('Plot Structure').closest('.p-4')
+        const warningIcon = plotComponent?.querySelector('.lucide-alert-circle')
+        expect(warningIcon).toBeInTheDocument()
+      })
+    })
 
-    await waitFor(() => {
-      expect(screen.getByText('Complete plot structure before locking')).toBeInTheDocument();
-      expect(screen.getByText('Consider soft-locking characters to allow minor adjustments')).toBeInTheDocument();
-      expect(screen.getByText('Review world-building consistency')).toBeInTheDocument();
-    });
-  });
+    it('shows lock icon for locked components', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
 
-  it('renders component interaction elements', async () => {
-    await renderComponent();
+      await waitFor(() => {
+        const settingComponent = screen.getByText('World & Setting').closest('.p-4')
+        const lockIcon = settingComponent?.querySelector('.lucide-lock')
+        expect(lockIcon).toBeInTheDocument()
+        expect(screen.getByText('hard locked')).toBeInTheDocument()
+      })
+    })
+  })
 
-    await waitFor(() => {
-      // Check that basic component interaction is available
-      expect(screen.getByText('World & Setting')).toBeInTheDocument();
-      expect(screen.getByText('Main Characters')).toBeInTheDocument();
-      expect(screen.getByText('Plot Structure')).toBeInTheDocument();
-    });
-  });
+  describe('Progress Bars', () => {
+    it('displays progress bar for overall readiness', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
 
-  it('loads without errors', async () => {
-    await renderComponent();
+      await waitFor(() => {
+        const progressBar = document.querySelector('[style*="width: 75%"]')
+        expect(progressBar).toBeInTheDocument()
+      })
+    })
 
-    await waitFor(() => {
-      expect(screen.getByText('Overall Readiness')).toBeInTheDocument();
-    });
-  });
-});
+    it('applies correct color coding to progress bars', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        const progressBar = document.querySelector('.bg-yellow-500')
+        expect(progressBar).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Lock All Ready Functionality', () => {
+    it('allows selecting multiple components', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Main Characters')).toBeInTheDocument()
+      })
+
+      const checkboxes = screen.getAllByRole('checkbox')
+      const characterCheckbox = checkboxes.find((checkbox, idx) => {
+        // Find checkbox associated with Main Characters
+        return checkbox.closest('.p-4')?.textContent?.includes('Main Characters')
+      })
+      
+      if (characterCheckbox) {
+        await user.click(characterCheckbox)
+        expect(characterCheckbox).toBeChecked()
+      }
+    })
+
+    it('shows lock controls when components are selected', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Main Characters')).toBeInTheDocument()
+      })
+
+      const checkboxes = screen.getAllByRole('checkbox')
+      const checkbox = checkboxes.find(cb => cb.closest('.p-4')?.textContent?.includes('Main Characters'))
+      
+      if (checkbox) {
+        await user.click(checkbox)
+        await waitFor(() => {
+          expect(screen.getByText('Lock Selected Components')).toBeInTheDocument()
+          expect(screen.getByText('Lock 1 Components')).toBeInTheDocument()
+        })
+      }
+    })
+
+    it('allows selecting lock level', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Main Characters')).toBeInTheDocument()
+      })
+
+      const checkboxes = screen.getAllByRole('checkbox')
+      const checkbox = checkboxes.find(cb => cb.closest('.p-4')?.textContent?.includes('Main Characters'))
+      
+      if (checkbox) {
+        await user.click(checkbox)
+        
+        await waitFor(() => {
+          const lockLevelSelect = screen.getByRole('combobox')
+          expect(lockLevelSelect).toHaveValue('hard')
+        })
+        
+        const lockLevelSelect = screen.getByRole('combobox')
+        await user.selectOptions(lockLevelSelect, 'soft')
+        expect(lockLevelSelect).toHaveValue('soft')
+      }
+    })
+
+    it('calls onComponentLock when locking components', async () => {
+      const onComponentLock = jest.fn()
+      const { user } = render(<FoundationCheckpoint {...defaultProps} onComponentLock={onComponentLock} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Main Characters')).toBeInTheDocument()
+      })
+
+      const checkboxes = screen.getAllByRole('checkbox')
+      const checkbox = checkboxes.find(cb => cb.closest('.p-4')?.textContent?.includes('Main Characters'))
+      
+      if (checkbox) {
+        await user.click(checkbox)
+        
+        await waitFor(() => {
+          expect(screen.getByText('Lock 1 Components')).toBeInTheDocument()
+        })
+        
+        const lockButton = screen.getByText('Lock 1 Components')
+        await user.click(lockButton)
+
+        await waitFor(() => {
+          expect(onComponentLock).toHaveBeenCalledWith(['characters-main'], 'hard')
+          expect(mockAddNotification).toHaveBeenCalledWith('success', expect.stringContaining('Components Locked'))
+        })
+      }
+    })
+  })
+
+  describe('Continue Unlocked Option', () => {
+    it('enables checkpoint creation when all components are ready', async () => {
+      const readyStatus = {
+        ...mockFoundationStatus,
+        overall_ready: true,
+        components: mockFoundationStatus.components.map(c => ({ ...c, ready: true, issues: [] }))
+      }
+
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => readyStatus
+      })
+
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        const createButton = screen.getByText('Create Foundation Checkpoint')
+        expect(createButton).not.toBeDisabled()
+      })
+    })
+
+    it('disables checkpoint creation when components are not ready', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        const createButton = screen.getByText('Create Foundation Checkpoint')
+        expect(createButton).toBeDisabled()
+      })
+    })
+
+    it('calls onCheckpointCreate when creating checkpoint', async () => {
+      const readyStatus = {
+        ...mockFoundationStatus,
+        overall_ready: true,
+        components: mockFoundationStatus.components.map(c => ({ ...c, ready: true, issues: [] }))
+      }
+
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: true,
+        json: async () => readyStatus
+      })
+
+      const onCheckpointCreate = jest.fn()
+      const { user } = render(<FoundationCheckpoint {...defaultProps} onCheckpointCreate={onCheckpointCreate} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Create Foundation Checkpoint')).toBeInTheDocument()
+      })
+
+      const createButton = screen.getByText('Create Foundation Checkpoint')
+      await user.click(createButton)
+
+      expect(onCheckpointCreate).toHaveBeenCalled()
+    })
+  })
+
+  describe('Review & Lock Functionality', () => {
+    it('allows clicking on components to select them', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Plot Structure')).toBeInTheDocument()
+      })
+
+      const plotComponent = screen.getByText('Plot Structure').closest('.p-4')!
+      await user.click(plotComponent)
+
+      expect(plotComponent).toHaveClass('border-blue-500', 'bg-blue-50')
+    })
+
+    it('toggles component selection on click', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Plot Structure')).toBeInTheDocument()
+      })
+
+      const plotComponent = screen.getByText('Plot Structure').closest('.p-4')!
+      
+      // Select
+      await user.click(plotComponent)
+      expect(plotComponent).toHaveClass('border-blue-500')
+
+      // Deselect
+      await user.click(plotComponent)
+      expect(plotComponent).not.toHaveClass('border-blue-500')
+    })
+  })
+
+  describe('Incomplete Component Warnings', () => {
+    it('displays issues for incomplete components', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Issues:')).toBeInTheDocument()
+        expect(screen.getByText('Missing Act 2 climax')).toBeInTheDocument()
+        expect(screen.getByText('Unclear character motivations')).toBeInTheDocument()
+      })
+    })
+
+    it('shows recommendations section', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Recommendations')).toBeInTheDocument()
+        expect(screen.getByText('Complete plot structure before locking')).toBeInTheDocument()
+        expect(screen.getByText('Consider soft-locking characters to allow minor adjustments')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('API Interactions', () => {
+    it('fetches foundation status on mount', async () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith('/api/projects/test-project-1/foundation-status')
+      })
+    })
+
+    it('handles API errors gracefully', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+      ;(global.fetch as jest.Mock).mockRejectedValue(new Error('API Error'))
+
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        // Should still show mock data on error
+        expect(screen.getByText('World & Setting')).toBeInTheDocument()
+      })
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    it('refreshes status when refresh button is clicked', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Refresh Status')).toBeInTheDocument()
+      })
+
+      jest.clearAllMocks()
+
+      const refreshButton = screen.getByText('Refresh Status')
+      await user.click(refreshButton)
+
+      expect(global.fetch).toHaveBeenCalledWith('/api/projects/test-project-1/foundation-status')
+    })
+  })
+
+  describe('Loading and Error States', () => {
+    it('shows loading skeleton initially', () => {
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      const animatePulse = document.querySelector('.animate-pulse')
+      expect(animatePulse).toBeInTheDocument()
+    })
+
+    it('shows error state when foundation status is null', async () => {
+      ;(global.fetch as jest.Mock).mockResolvedValue({
+        ok: false,
+        json: async () => null
+      })
+
+      render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Failed to load foundation status')).toBeInTheDocument()
+      })
+    })
+  })
+
+  describe('Guided Flow Mode', () => {
+    it('toggles between guided flow and manual mode', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Guided Flow')).toBeInTheDocument()
+      })
+
+      const toggleButton = screen.getByText('Guided Flow')
+      await user.click(toggleButton)
+
+      expect(screen.getByText('Manual Mode')).toBeInTheDocument()
+    })
+  })
+
+  describe('Accessibility', () => {
+    it('has accessible form controls', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Main Characters')).toBeInTheDocument()
+      })
+
+      // Select a component
+      const checkboxes = screen.getAllByRole('checkbox')
+      const checkbox = checkboxes.find(cb => cb.closest('.p-4')?.textContent?.includes('Main Characters'))
+      
+      if (checkbox) {
+        await user.click(checkbox)
+
+        await waitFor(() => {
+          // Check lock level select has label
+          const lockLevelSelect = screen.getByRole('combobox')
+          expect(lockLevelSelect).toBeInTheDocument()
+          expect(screen.getByText('Lock Level:')).toBeInTheDocument()
+        })
+      }
+    })
+
+    it('provides keyboard navigation', async () => {
+      const { user } = render(<FoundationCheckpoint {...defaultProps} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('Main Characters')).toBeInTheDocument()
+      })
+
+      // Tab through elements
+      await user.tab()
+      expect(screen.getByText('Guided Flow')).toHaveFocus()
+
+      await user.tab()
+      expect(screen.getAllByRole('checkbox')[0]).toHaveFocus()
+    })
+  })
+})

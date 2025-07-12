@@ -67,12 +67,9 @@ export const createContinuitySlice: StateCreator<ContinuitySlice> = (set, get) =
   })),
 
   clearIssuesForScene: (sceneId) => set((state) => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { [sceneId]: _removed, ...remainingIssues } = state.continuityIssues;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { [sceneId]: _removedChecking, ...remainingChecking } = state.isChecking;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { [sceneId]: _removedLastChecked, ...remainingLastChecked } = state.lastChecked;
+    const { [sceneId]: _, ...remainingIssues } = state.continuityIssues;
+    const { [sceneId]: __, ...remainingChecking } = state.isChecking;
+    const { [sceneId]: ___, ...remainingLastChecked } = state.lastChecked;
 
     return {
       continuityIssues: remainingIssues,

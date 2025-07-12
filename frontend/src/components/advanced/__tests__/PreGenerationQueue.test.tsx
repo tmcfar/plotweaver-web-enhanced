@@ -1,282 +1,581 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { PreGenerationQueue } from '@/components/advanced/PreGenerationQueue';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-// Using Jest mocks
+import { render, screen, waitFor, act } from '@/test-utils/render'
+import { PreGenerationQueue } from '../PreGenerationQueue'
+import { useNotifications } from '@/components/notifications/NotificationSystem'
+import type { QueuedScene } from '../PreGenerationQueue'
 
-// Mock API
-const mockFetchQueueItems = jest.fn();
-const mockUpdateQueuePriority = jest.fn();
-const mockPauseQueueItem = jest.fn();
-const mockResumeQueueItem = jest.fn();
-const mockCancelQueueItem = jest.fn();
-const mockBatchQueueOperation = jest.fn();
-const mockReorderQueue = jest.fn();
+// Mock dependencies
+jest.mock('@/components/notifications/NotificationSystem')
 
-jest.mock('@/lib/api/queue', () => ({
-  fetchQueueItems: mockFetchQueueItems,
-  updateQueuePriority: mockUpdateQueuePriority,
-  pauseQueueItem: mockPauseQueueItem,
-  resumeQueueItem: mockResumeQueueItem,
-  cancelQueueItem: mockCancelQueueItem,
-  batchQueueOperation: mockBatchQueueOperation,
-  reorderQueue: mockReorderQueue,
-}));
+const mockUseNotifications = useNotifications as jest.MockedFunction<typeof useNotifications>
 
-// Mock hooks
-jest.mock('@/hooks/useAgentQueue', () => ({
-  useAgentQueue: () => ({
-    queueItems: mockQueueItems,
-    isLoading: false,
-    refetch: jest.fn(),
-  }),
-}));
-
-const mockQueueItems = [
-  {
-    id: 'queue-1',
-    sceneId: 'scene-1',
-    sceneName: 'Opening Scene',
-    priority: 'high',
-    status: 'queued',
-    estimatedCost: 0.15,
-    estimatedTime: 120,
-    progress: 0,
-    createdAt: new Date('2024-01-01T10:00:00'),
+// Helper to create mock scene
+const createMockScene = (overrides: Partial<QueuedScene> = {}): QueuedScene => ({
+  id: 'scene-1',
+  title: 'Opening Scene',
+  chapterId: 'chapter-1',
+  chapterTitle: 'Chapter 1',
+  position: 1,
+  status: 'queued',
+  priority: 'normal',
+  estimatedTokens: 1000,
+  estimatedCost: 0.15,
+  estimatedTime: 120,
+  queuedAt: new Date('2024-01-01T10:00:00'),
+  context: {
+    characters: ['John Doe', 'Jane Smith'],
+    settings: ['Police Station'],
+    plotPoints: ['Murder discovered']
   },
-  {
-    id: 'queue-2',
-    sceneId: 'scene-2',
-    sceneName: 'Character Introduction',
-    priority: 'normal',
-    status: 'generating',
-    estimatedCost: 0.20,
-    estimatedTime: 150,
-    progress: 45,
-    createdAt: new Date('2024-01-01T10:05:00'),
-  },
-  {
-    id: 'queue-3',
-    sceneId: 'scene-3',
-    sceneName: 'Conflict Scene',
-    priority: 'low',
-    status: 'completed',
-    estimatedCost: 0.18,
-    estimatedTime: 130,
-    progress: 100,
-    completedAt: new Date('2024-01-01T10:10:00'),
-    result: {
-      content: 'Generated scene content...',
-      quality: 0.92,
-    },
-  },
-  {
-    id: 'queue-4',
-    sceneId: 'scene-4',
-    sceneName: 'Failed Scene',
-    priority: 'urgent',
-    status: 'failed',
-    estimatedCost: 0.10,
-    estimatedTime: 90,
-    progress: 0,
-    error: 'Generation failed due to timeout',
-    createdAt: new Date('2024-01-01T10:15:00'),
-  },
-];
+  ...overrides
+})
 
 describe('PreGenerationQueue', () => {
-  let queryClient: QueryClient;
+  const defaultProps = {
+    projectId: 'test-project',
+    queuedScenes: [],
+    onQueueUpdate: jest.fn(),
+    onGenerationStart: jest.fn(),
+    onGenerationCancel: jest.fn(),
+    onGenerationPause: jest.fn(),
+    onGenerationResume: jest.fn(),
+    isProcessing: false
+  }
+
+  const mockAddNotification = jest.fn()
 
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-      },
-    });
-  });
+    jest.clearAllMocks()
+    jest.useFakeTimers()
 
-  const renderComponent = (queuedScenes = mockQueueItems) => {
-    return render(
-      <QueryClientProvider client={queryClient}>
-        <PreGenerationQueue 
-          projectId="test-project"
-          queuedScenes={queuedScenes.map(item => ({
-            id: item.id,
-            title: item.sceneName,
-            chapterId: 'chapter-1',
-            chapterTitle: 'Chapter 1',
-            position: 1,
-            status: item.status as 'queued' | 'generating' | 'completed' | 'failed' | 'paused',
-            priority: item.priority as 'low' | 'normal' | 'high' | 'urgent',
-            estimatedTokens: 1000,
-            estimatedCost: item.estimatedCost,
-            estimatedTime: item.estimatedTime,
-            queuedAt: item.createdAt,
-            startedAt: item.createdAt,
-            completedAt: item.completedAt,
-            progress: item.progress,
-            error: item.error,
-            context: {
-              characters: ['Character 1'],
-              settings: ['Setting 1'],
-              plotPoints: ['Plot Point 1']
-            },
-            generatedContent: item.result?.content,
-            wordCount: item.result?.content ? 500 : undefined
-          }))}
-          onQueueUpdate={() => {}}
-          onGenerationStart={() => {}}
-          onGenerationCancel={() => {}}
-          onGenerationPause={() => {}}
-          onGenerationResume={() => {}}
-          isProcessing={false}
-        />
-      </QueryClientProvider>
-    );
-  };
+    mockUseNotifications.mockReturnValue({
+      addNotification: mockAddNotification,
+      notifications: [],
+      removeNotification: jest.fn(),
+      clearNotifications: jest.fn(),
+    })
+  })
 
-  it('renders queue items correctly', () => {
-    renderComponent();
+  afterEach(() => {
+    jest.runOnlyPendingTimers()
+    jest.useRealTimers()
+  })
 
-    expect(screen.getByText('Opening Scene')).toBeInTheDocument();
-    expect(screen.getByText('Character Introduction')).toBeInTheDocument();
-    expect(screen.getByText('Conflict Scene')).toBeInTheDocument();
-    expect(screen.getByText('Failed Scene')).toBeInTheDocument();
-  });
+  describe('Queue Item Display', () => {
+    it('displays queued scenes correctly', () => {
+      const scenes = [
+        createMockScene({ id: 'scene-1', title: 'Opening Scene' }),
+        createMockScene({ id: 'scene-2', title: 'Character Introduction', priority: 'high' }),
+        createMockScene({ id: 'scene-3', title: 'Plot Twist', priority: 'urgent', status: 'generating', progress: 45 })
+      ]
 
-  it('displays queue statistics', () => {
-    renderComponent();
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
 
-    // Should show scene count in header
-    expect(screen.getByText(/4 scenes/)).toBeInTheDocument();
-  });
+      expect(screen.getByText('Opening Scene')).toBeInTheDocument()
+      expect(screen.getByText('Character Introduction')).toBeInTheDocument()
+      expect(screen.getByText('Plot Twist')).toBeInTheDocument()
+    })
 
-  it('shows cost and time estimates', () => {
-    renderComponent();
+    it('shows chapter and position information', () => {
+      const scene = createMockScene({ 
+        chapterTitle: 'Chapter 2: The Investigation',
+        position: 3 
+      })
 
-    // Should show cost and time estimates in header
-    expect(screen.getByText(/Est\. \$/)).toBeInTheDocument();
-  });
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
 
-  it('displays priority badges correctly', () => {
-    renderComponent();
+      expect(screen.getByText('Chapter 2: The Investigation • Position 3')).toBeInTheDocument()
+    })
 
-    const urgentBadge = screen.getByText('urgent');
-    expect(urgentBadge).toHaveClass('bg-red-100');
+    it('displays context information in expanded view', async () => {
+      const scene = createMockScene()
+      const { user } = render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
 
-    const highBadge = screen.getByText('high');
-    expect(highBadge).toHaveClass('bg-orange-100');
+      // Click to expand
+      const sceneItem = screen.getByText('Opening Scene').closest('.p-4')!
+      await user.click(sceneItem)
 
-    const normalBadge = screen.getByText('normal');
-    expect(normalBadge).toHaveClass('bg-blue-100');
+      expect(screen.getByText('Characters: John Doe, Jane Smith')).toBeInTheDocument()
+      expect(screen.getByText('Settings: Police Station')).toBeInTheDocument()
+      expect(screen.getByText('Plot: Murder discovered')).toBeInTheDocument()
+    })
+  })
 
-    const lowBadge = screen.getByText('low');
-    expect(lowBadge).toHaveClass('bg-gray-100');
-  });
+  describe('Priority Levels', () => {
+    it('displays all priority levels with correct styling', () => {
+      const scenes = [
+        createMockScene({ id: '1', priority: 'low' }),
+        createMockScene({ id: '2', priority: 'normal' }),
+        createMockScene({ id: '3', priority: 'high' }),
+        createMockScene({ id: '4', priority: 'urgent' })
+      ]
 
-  it('shows progress bars for generating items', () => {
-    renderComponent();
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
 
-    // Find the generating item with progress
-    expect(screen.getByText('45% complete')).toBeInTheDocument();
-  });
+      const lowBadge = screen.getByText('low')
+      expect(lowBadge).toHaveClass('bg-gray-100', 'text-gray-800')
 
-  it('filters queue by status', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+      const normalBadge = screen.getByText('normal')
+      expect(normalBadge).toHaveClass('bg-blue-100', 'text-blue-800')
 
-    // Filter by generating
-    const filterSelect = screen.getByDisplayValue('All Scenes');
-    await user.selectOptions(filterSelect, 'generating');
+      const highBadge = screen.getByText('high')
+      expect(highBadge).toHaveClass('bg-orange-100', 'text-orange-800')
 
-    // Should only show generating item
-    expect(screen.getByText('Character Introduction')).toBeInTheDocument();
-    expect(screen.queryByText('Opening Scene')).not.toBeInTheDocument();
-    expect(screen.queryByText('Conflict Scene')).not.toBeInTheDocument();
-  });
+      const urgentBadge = screen.getByText('urgent')
+      expect(urgentBadge).toHaveClass('bg-red-100', 'text-red-800')
+    })
 
-  it('shows priority selection dropdowns', async () => {
-    renderComponent();
-    
-    // Test that select elements are present (Filter + Sort + Priority selects per item)
-    const allSelects = screen.getAllByRole('combobox');
-    expect(allSelects.length).toBeGreaterThan(2); // Filter + Sort + Priority selects
-  });
+    it('sorts by priority when selected', async () => {
+      const scenes = [
+        createMockScene({ id: '1', title: 'Low Priority', priority: 'low' }),
+        createMockScene({ id: '2', title: 'Urgent Priority', priority: 'urgent' }),
+        createMockScene({ id: '3', title: 'Normal Priority', priority: 'normal' })
+      ]
 
-  it('handles pause/resume operations', async () => {
-    const user = userEvent.setup();
-    renderComponent();
+      const { user } = render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
 
-    // Find pause button for generating item (should be present for generating status)
-    const pauseButtons = screen.getAllByRole('button');
-    const pauseButton = pauseButtons.find(btn => 
-      btn.querySelector('svg[class*="lucide-pause"]')
-    );
-    
-    expect(pauseButton).toBeInTheDocument();
-  });
+      const sortSelect = screen.getAllByRole('combobox')[1] // Second select is sort
+      await user.selectOptions(sortSelect, 'priority')
 
-  it('shows cancel buttons for items', async () => {
-    renderComponent();
+      const items = screen.getAllByRole('generic').filter(el => el.classList.contains('p-4'))
+      expect(items[0]).toHaveTextContent('Urgent Priority')
+      expect(items[1]).toHaveTextContent('Normal Priority')
+      expect(items[2]).toHaveTextContent('Low Priority')
+    })
 
-    // Find cancel buttons (X icon buttons)
-    const cancelButtons = screen.getAllByRole('button');
-    const xButtons = cancelButtons.filter(btn => 
-      btn.querySelector('svg[class*="lucide-x"]')
-    );
-    
-    expect(xButtons.length).toBeGreaterThan(0);
-  });
+    it('allows updating priority', async () => {
+      const onQueueUpdate = jest.fn()
+      const scene = createMockScene({ priority: 'normal' })
+      const { user } = render(
+        <PreGenerationQueue {...defaultProps} queuedScenes={[scene]} onQueueUpdate={onQueueUpdate} />
+      )
 
-  it('shows preview buttons for completed items', async () => {
-    renderComponent();
+      const prioritySelect = screen.getByDisplayValue('normal')
+      await user.selectOptions(prioritySelect, 'high')
 
-    // Find preview buttons (Eye icon buttons) for completed items
-    const eyeButtons = screen.getAllByRole('button').filter(btn => 
-      btn.querySelector('svg[class*="lucide-eye"]')
-    );
-    
-    expect(eyeButtons.length).toBeGreaterThan(0);
-  });
+      expect(onQueueUpdate).toHaveBeenCalledWith([
+        expect.objectContaining({
+          id: 'scene-1',
+          priority: 'high'
+        })
+      ])
+    })
+  })
 
-  it('shows failed items with error status', async () => {
-    renderComponent();
+  describe('Progress Bar Updates', () => {
+    it('displays progress bar for generating scenes', () => {
+      const scene = createMockScene({ 
+        status: 'generating',
+        progress: 65
+      })
 
-    // Check that failed item exists
-    expect(screen.getByText('Failed Scene')).toBeInTheDocument();
-    
-    // Check that alert icon is present for failed items
-    const alertIcons = screen.getAllByRole('button').filter(btn => 
-      btn.querySelector('svg[class*="lucide-circle-alert"]') ||
-      document.querySelector('svg[class*="lucide-circle-alert"]')
-    );
-    
-    // Failed items should have alert visual indicator
-    expect(document.querySelector('svg[class*="lucide-circle-alert"]')).toBeInTheDocument();
-  });
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
 
-  it('shows queue positioning controls', async () => {
-    renderComponent();
+      const progressBar = screen.getByRole('generic').querySelector('[style*="width: 65%"]')
+      expect(progressBar).toBeInTheDocument()
+      expect(screen.getByText('65% complete')).toBeInTheDocument()
+    })
 
-    // Find move up/down buttons (ChevronUp/Down icons) for queued items
-    const chevronButtons = screen.getAllByRole('button').filter(btn => 
-      btn.querySelector('svg[class*="lucide-chevron"]')
-    );
-    
-    expect(chevronButtons.length).toBeGreaterThan(0);
-  });
+    it('updates progress automatically', async () => {
+      const scene = createMockScene({ 
+        status: 'generating',
+        progress: 50
+      })
 
-  it('shows empty state when no items', async () => {
-    renderComponent([]);
+      const { rerender } = render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
 
-    expect(screen.getByText('No scenes in queue')).toBeInTheDocument();
-    expect(screen.getByText('Queue scenes for background generation')).toBeInTheDocument();
-  });
+      // Simulate progress update
+      act(() => {
+        jest.advanceTimersByTime(2000)
+      })
 
-  it('renders component without errors', () => {
-    renderComponent();
-    
-    expect(screen.getByText('Pre-Generation Queue')).toBeInTheDocument();
-  });
-});
+      const updatedScene = { ...scene, progress: 60 }
+      rerender(<PreGenerationQueue {...defaultProps} queuedScenes={[updatedScene]} />)
+
+      await waitFor(() => {
+        expect(screen.getByText('60% complete')).toBeInTheDocument()
+      })
+    })
+
+    it('transitions to completed when progress reaches 100%', async () => {
+      const onQueueUpdate = jest.fn()
+      const scene = createMockScene({ 
+        status: 'generating',
+        progress: 95
+      })
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} onQueueUpdate={onQueueUpdate} />)
+
+      act(() => {
+        jest.advanceTimersByTime(2000)
+      })
+
+      await waitFor(() => {
+        expect(onQueueUpdate).toHaveBeenCalledWith(expect.arrayContaining([
+          expect.objectContaining({
+            status: 'completed',
+            progress: 100
+          })
+        ]))
+      })
+    })
+  })
+
+  describe('Pause/Resume/Cancel Operations', () => {
+    it('shows pause button for generating scenes', () => {
+      const scene = createMockScene({ status: 'generating' })
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      const pauseButton = screen.getAllByRole('button').find(btn => btn.querySelector('.lucide-pause'))
+      expect(pauseButton).toBeInTheDocument()
+    })
+
+    it('calls onGenerationPause when pause is clicked', async () => {
+      const onGenerationPause = jest.fn()
+      const scene = createMockScene({ status: 'generating' })
+      const { user } = render(
+        <PreGenerationQueue {...defaultProps} queuedScenes={[scene]} onGenerationPause={onGenerationPause} />
+      )
+
+      const pauseButton = screen.getAllByRole('button').find(btn => btn.querySelector('.lucide-pause'))!
+      await user.click(pauseButton)
+
+      expect(onGenerationPause).toHaveBeenCalledWith('scene-1')
+    })
+
+    it('shows resume button for paused scenes', () => {
+      const scene = createMockScene({ status: 'paused' })
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      const playButton = screen.getAllByRole('button').find(btn => btn.querySelector('.lucide-play'))
+      expect(playButton).toBeInTheDocument()
+    })
+
+    it('calls onGenerationResume when resume is clicked', async () => {
+      const onGenerationResume = jest.fn()
+      const scene = createMockScene({ status: 'paused' })
+      const { user } = render(
+        <PreGenerationQueue {...defaultProps} queuedScenes={[scene]} onGenerationResume={onGenerationResume} />
+      )
+
+      const playButton = screen.getAllByRole('button').find(btn => btn.querySelector('.lucide-play'))!
+      await user.click(playButton)
+
+      expect(onGenerationResume).toHaveBeenCalledWith('scene-1')
+    })
+
+    it('allows canceling any scene', async () => {
+      const onGenerationCancel = jest.fn()
+      const scene = createMockScene()
+      const { user } = render(
+        <PreGenerationQueue {...defaultProps} queuedScenes={[scene]} onGenerationCancel={onGenerationCancel} />
+      )
+
+      const cancelButton = screen.getAllByRole('button').find(btn => btn.querySelector('.lucide-x'))!
+      await user.click(cancelButton)
+
+      expect(onGenerationCancel).toHaveBeenCalledWith('scene-1')
+    })
+  })
+
+  describe('Filtering by Status', () => {
+    it('filters scenes by status', async () => {
+      const scenes = [
+        createMockScene({ id: '1', title: 'Queued Scene', status: 'queued' }),
+        createMockScene({ id: '2', title: 'Generating Scene', status: 'generating' }),
+        createMockScene({ id: '3', title: 'Completed Scene', status: 'completed' }),
+        createMockScene({ id: '4', title: 'Failed Scene', status: 'failed' })
+      ]
+
+      const { user } = render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      const filterSelect = screen.getAllByRole('combobox')[0]
+      await user.selectOptions(filterSelect, 'completed')
+
+      expect(screen.getByText('Completed Scene')).toBeInTheDocument()
+      expect(screen.queryByText('Queued Scene')).not.toBeInTheDocument()
+      expect(screen.queryByText('Generating Scene')).not.toBeInTheDocument()
+      expect(screen.queryByText('Failed Scene')).not.toBeInTheDocument()
+    })
+
+    it('shows all scenes when "All Scenes" is selected', async () => {
+      const scenes = [
+        createMockScene({ id: '1', title: 'Scene 1', status: 'queued' }),
+        createMockScene({ id: '2', title: 'Scene 2', status: 'completed' })
+      ]
+
+      const { user } = render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      const filterSelect = screen.getAllByRole('combobox')[0]
+      await user.selectOptions(filterSelect, 'all')
+
+      expect(screen.getByText('Scene 1')).toBeInTheDocument()
+      expect(screen.getByText('Scene 2')).toBeInTheDocument()
+    })
+  })
+
+  describe('Reordering with Up/Down Buttons', () => {
+    it('shows up/down buttons for queued scenes', () => {
+      const scenes = [
+        createMockScene({ id: '1', status: 'queued' }),
+        createMockScene({ id: '2', status: 'queued' })
+      ]
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      const upButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.lucide-chevron-up'))
+      const downButtons = screen.getAllByRole('button').filter(btn => btn.querySelector('.lucide-chevron-down'))
+
+      expect(upButtons.length).toBe(2)
+      expect(downButtons.length).toBe(2)
+    })
+
+    it('disables up button for first item', () => {
+      const scenes = [
+        createMockScene({ id: '1', title: 'First' }),
+        createMockScene({ id: '2', title: 'Second' })
+      ]
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      const firstItemUpButton = screen.getAllByRole('button')
+        .filter(btn => btn.querySelector('.lucide-chevron-up'))[0]
+
+      expect(firstItemUpButton).toBeDisabled()
+    })
+
+    it('disables down button for last item', () => {
+      const scenes = [
+        createMockScene({ id: '1', title: 'First' }),
+        createMockScene({ id: '2', title: 'Last' })
+      ]
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      const lastItemDownButton = screen.getAllByRole('button')
+        .filter(btn => btn.querySelector('.lucide-chevron-down'))[1]
+
+      expect(lastItemDownButton).toBeDisabled()
+    })
+
+    it('moves item up in queue', async () => {
+      const onQueueUpdate = jest.fn()
+      const scenes = [
+        createMockScene({ id: '1', title: 'First' }),
+        createMockScene({ id: '2', title: 'Second' })
+      ]
+
+      const { user } = render(
+        <PreGenerationQueue {...defaultProps} queuedScenes={scenes} onQueueUpdate={onQueueUpdate} />
+      )
+
+      const secondItemUpButton = screen.getAllByRole('button')
+        .filter(btn => btn.querySelector('.lucide-chevron-up'))[1]
+
+      await user.click(secondItemUpButton)
+
+      expect(onQueueUpdate).toHaveBeenCalledWith([
+        expect.objectContaining({ id: '2', title: 'Second' }),
+        expect.objectContaining({ id: '1', title: 'First' })
+      ])
+      expect(mockAddNotification).toHaveBeenCalledWith('info', expect.stringContaining('Moved "Second" up'))
+    })
+  })
+
+  describe('Batch Operations', () => {
+    it('enables start queue button when queued items exist', () => {
+      const scenes = [
+        createMockScene({ status: 'queued' }),
+        createMockScene({ id: '2', status: 'completed' })
+      ]
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      const startButton = screen.getByText('Start Queue')
+      expect(startButton).not.toBeDisabled()
+    })
+
+    it('disables start queue button when no queued items', () => {
+      const scenes = [
+        createMockScene({ status: 'completed' }),
+        createMockScene({ id: '2', status: 'failed' })
+      ]
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      const startButton = screen.getByText('Start Queue')
+      expect(startButton).toBeDisabled()
+    })
+
+    it('shows pause queue button when processing', () => {
+      render(<PreGenerationQueue {...defaultProps} isProcessing={true} />)
+
+      expect(screen.getByText('Pause Queue')).toBeInTheDocument()
+      expect(screen.queryByText('Start Queue')).not.toBeInTheDocument()
+    })
+
+    it('starts generation for next queued item', async () => {
+      const onGenerationStart = jest.fn()
+      const scenes = [
+        createMockScene({ id: '1', status: 'generating' }),
+        createMockScene({ id: '2', status: 'queued' })
+      ]
+
+      const { user } = render(
+        <PreGenerationQueue {...defaultProps} queuedScenes={scenes} onGenerationStart={onGenerationStart} />
+      )
+
+      const startButton = screen.getByText('Start Queue')
+      await user.click(startButton)
+
+      expect(onGenerationStart).toHaveBeenCalledWith('2')
+    })
+  })
+
+  describe('Summary Statistics', () => {
+    it('shows total cost and time estimates', () => {
+      const scenes = [
+        createMockScene({ estimatedCost: 0.10, estimatedTime: 60, status: 'queued' }),
+        createMockScene({ id: '2', estimatedCost: 0.15, estimatedTime: 90, status: 'queued' }),
+        createMockScene({ id: '3', estimatedCost: 0.20, estimatedTime: 120, status: 'completed' })
+      ]
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      // Should sum only queued items
+      expect(screen.getByText(/Est\. \$0\.25/)).toBeInTheDocument() // 0.10 + 0.15
+      expect(screen.getByText(/2:30/)).toBeInTheDocument() // 150 seconds = 2:30
+    })
+
+    it('shows scene count', () => {
+      const scenes = [
+        createMockScene(),
+        createMockScene({ id: '2' }),
+        createMockScene({ id: '3' })
+      ]
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      expect(screen.getByText('3 scenes')).toBeInTheDocument()
+    })
+  })
+
+  describe('Preview Functionality', () => {
+    it('shows preview button for completed scenes', () => {
+      const scene = createMockScene({ 
+        status: 'completed',
+        generatedContent: 'The scene begins...'
+      })
+
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      const eyeButton = screen.getAllByRole('button').find(btn => btn.querySelector('.lucide-eye'))
+      expect(eyeButton).toBeInTheDocument()
+    })
+
+    it('toggles content preview', async () => {
+      const scene = createMockScene({ 
+        status: 'completed',
+        generatedContent: 'The rain poured down as Detective John entered the station...',
+        wordCount: 15
+      })
+
+      const { user } = render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      const eyeButton = screen.getAllByRole('button').find(btn => btn.querySelector('.lucide-eye'))!
+      await user.click(eyeButton)
+
+      expect(screen.getByText('Generated Content Preview')).toBeInTheDocument()
+      expect(screen.getByText(/The rain poured down/)).toBeInTheDocument()
+    })
+
+    it('shows word count for completed scenes', async () => {
+      const scene = createMockScene({ 
+        status: 'completed',
+        wordCount: 1250
+      })
+
+      const { user } = render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      // Expand details
+      const sceneItem = screen.getByText('Opening Scene').closest('.p-4')!
+      await user.click(sceneItem)
+
+      expect(screen.getByText('Words: 1,250')).toBeInTheDocument()
+    })
+  })
+
+  describe('Error Handling', () => {
+    it('displays error message for failed scenes', async () => {
+      const scene = createMockScene({ 
+        status: 'failed',
+        error: 'API rate limit exceeded'
+      })
+
+      const { user } = render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      // Expand to see error
+      const sceneItem = screen.getByText('Opening Scene').closest('.p-4')!
+      await user.click(sceneItem)
+
+      expect(screen.getByText('Error: API rate limit exceeded')).toBeInTheDocument()
+    })
+
+    it('shows error icon for failed scenes', () => {
+      const scene = createMockScene({ status: 'failed' })
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      const alertIcon = document.querySelector('.lucide-circle-alert')
+      expect(alertIcon).toBeInTheDocument()
+    })
+  })
+
+  describe('Empty State', () => {
+    it('shows empty state when no scenes', () => {
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[]} />)
+
+      expect(screen.getByText('No scenes in queue')).toBeInTheDocument()
+      expect(screen.getByText('Queue scenes for background generation')).toBeInTheDocument()
+    })
+  })
+
+  describe('Real-time Updates', () => {
+    it('automatically refreshes queue status', () => {
+      const scene = createMockScene({ status: 'generating', progress: 50 })
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      // Verify interval is set up
+      expect(setInterval).toHaveBeenCalled()
+    })
+
+    it('cleans up interval on unmount', () => {
+      const scene = createMockScene()
+      const { unmount } = render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      unmount()
+
+      expect(clearInterval).toHaveBeenCalled()
+    })
+  })
+
+  describe('Accessibility', () => {
+    it('has accessible form controls', () => {
+      const scene = createMockScene()
+      render(<PreGenerationQueue {...defaultProps} queuedScenes={[scene]} />)
+
+      // Priority select should have proper labeling
+      const prioritySelect = screen.getByDisplayValue('normal')
+      expect(prioritySelect).toBeInTheDocument()
+    })
+
+    it('provides keyboard navigation', async () => {
+      const scenes = [createMockScene(), createMockScene({ id: '2' })]
+      const { user } = render(<PreGenerationQueue {...defaultProps} queuedScenes={scenes} />)
+
+      await user.tab()
+      expect(screen.getAllByRole('combobox')[0]).toHaveFocus() // Filter select
+
+      await user.tab()
+      expect(screen.getAllByRole('combobox')[1]).toHaveFocus() // Sort select
+    })
+  })
+})

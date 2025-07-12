@@ -97,7 +97,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
     generateSuggestions();
   }, [context, sceneId]);
 
-  const validateContext = async () => {
+  const validateContext = useCallback(async () => {
     setIsValidating(true);
     try {
       const result = await onLockValidation(context);
@@ -108,9 +108,9 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
     } finally {
       setIsValidating(false);
     }
-  };
+  }, [context, onLockValidation, addNotification]);
 
-  const generateSuggestions = async () => {
+  const generateSuggestions = useCallback(async () => {
     if (context.length === 0) {
       setSuggestions([]);
       return;
@@ -126,7 +126,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
     } catch (error) {
       console.error('Failed to generate suggestions:', error);
     }
-  };
+  }, [context]);
 
   const addToContext = useCallback((component: ProjectComponent, reason: string = 'Manual addition') => {
     const newItem: ContextItem = {

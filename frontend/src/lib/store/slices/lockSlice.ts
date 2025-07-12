@@ -57,8 +57,7 @@ export const createLockSlice: StateCreator<LockSlice> = (set, get) => ({
       await lockService.releaseLock(componentId);
 
       set((state) => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [componentId]: _removedLock, ...remainingLocks } = state.locks;
+        const { [componentId]: _, ...remainingLocks } = state.locks;
         return { locks: remainingLocks };
       });
     } catch (error) {
