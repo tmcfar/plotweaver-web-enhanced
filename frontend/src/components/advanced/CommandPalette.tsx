@@ -1,16 +1,16 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
-import { 
-  Search, 
-  Command, 
-  ArrowRight, 
-  FileText, 
-  FolderOpen, 
-  Settings, 
-  User, 
-  Bot, 
-  Sparkles, 
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import {
+  Search,
+  Command,
+  ArrowRight,
+  FileText,
+  FolderOpen,
+  Settings,
+  User,
+  Bot,
+  Sparkles,
   GitBranch,
   Download,
   Plus,
@@ -22,9 +22,9 @@ import {
   Hash,
   Zap
 } from 'lucide-react'
-import { 
-  Dialog, 
-  DialogContent 
+import {
+  Dialog,
+  DialogContent
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -264,7 +264,7 @@ export function CommandPalette({ isOpen, onClose, className }: CommandPalettePro
     if (!query.trim()) return commands
 
     const searchTerms = query.toLowerCase().split(' ')
-    
+
     return commands.filter(command => {
       const searchableText = [
         command.label,
@@ -280,7 +280,7 @@ export function CommandPalette({ isOpen, onClose, className }: CommandPalettePro
   // Group filtered commands by category
   const groupedCommands = useMemo(() => {
     const groups: Record<string, Command[]> = {}
-    
+
     filteredCommands.forEach(command => {
       if (!groups[command.category]) {
         groups[command.category] = []
@@ -304,13 +304,13 @@ export function CommandPalette({ isOpen, onClose, className }: CommandPalettePro
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault()
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev < filteredCommands.length - 1 ? prev + 1 : 0
           )
           break
         case 'ArrowUp':
           e.preventDefault()
-          setSelectedIndex(prev => 
+          setSelectedIndex(prev =>
             prev > 0 ? prev - 1 : filteredCommands.length - 1
           )
           break
@@ -332,11 +332,11 @@ export function CommandPalette({ isOpen, onClose, className }: CommandPalettePro
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [isOpen, filteredCommands, selectedIndex])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setQuery('')
     setSelectedIndex(0)
     onClose()
-  }
+  }, [onClose])
 
   const handleCommandSelect = (command: Command) => {
     command.action()
@@ -387,7 +387,7 @@ export function CommandPalette({ isOpen, onClose, className }: CommandPalettePro
 
                 const CategoryIcon = category.icon
                 let commandIndex = 0
-                
+
                 // Calculate the starting index for this category
                 for (let i = 0; i < groupIndex; i++) {
                   const prevCategoryId = Object.keys(groupedCommands)[i]
@@ -414,8 +414,8 @@ export function CommandPalette({ isOpen, onClose, className }: CommandPalettePro
                             key={command.id}
                             className={cn(
                               'flex items-center justify-between px-3 py-2 rounded-md cursor-pointer transition-colors',
-                              isSelected 
-                                ? 'bg-accent text-accent-foreground' 
+                              isSelected
+                                ? 'bg-accent text-accent-foreground'
                                 : 'hover:bg-muted/50'
                             )}
                             onClick={() => handleCommandSelect(command)}

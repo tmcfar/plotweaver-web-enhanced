@@ -113,6 +113,18 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
     return flatten(items, [], 0, effectiveSearch);
   }, [items, expandedNodes, effectiveSearch]);
 
+  const toggleExpanded = useCallback((nodeId: string) => {
+    setExpandedNodes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  }, []);
+
   // Keyboard navigation
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (!focusedNode) return;
@@ -163,24 +175,14 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
       // Scroll to focused item
       listRef.current?.scrollToItem(newIndex, 'smart');
     }
-  }, [focusedNode, flattenedNodes, onLockToggle]);
+  }, [focusedNode, flattenedNodes, onLockToggle, toggleExpanded]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
-  const toggleExpanded = useCallback((nodeId: string) => {
-    setExpandedNodes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(nodeId)) {
-        newSet.delete(nodeId);
-      } else {
-        newSet.add(nodeId);
-      }
-      return newSet;
-    });
-  }, []); const handleNodeClick = useCallback((node: FlattenedNode, event: React.MouseEvent) => {
+  const handleNodeClick = useCallback((node: FlattenedNode, event: React.MouseEvent) => {
     event.stopPropagation();
     setSelectedNode(node.id);
     setFocusedNode(node.id);
