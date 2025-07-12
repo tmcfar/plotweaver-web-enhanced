@@ -50,18 +50,18 @@ export function setupStoreSubscriptions(): SubscriptionCleanup {
 
   // Subscribe to continuity issues for notifications
   const continuityCleanup = useStore.subscribe(
-    (state) => Object.values(state.continuityIssues).flat().length,
+    (state) => state.continuityIssues ? Object.values(state.continuityIssues).flat().length : 0,
     (issueCount, previousCount) => {
-      if (issueCount > previousCount) {
+      if (issueCount > (previousCount || 0)) {
         // New issues detected
-        notifyNewContinuityIssues(issueCount - previousCount);
+        notifyNewContinuityIssues(issueCount - (previousCount || 0));
       }
     }
   );
 
   // Subscribe to active jobs for progress tracking
   const jobCleanup = useStore.subscribe(
-    (state) => state.activeJobs.size,
+    (state) => state.activeJobs ? state.activeJobs.size : 0,
     (activeJobCount) => {
       updateJobIndicator(activeJobCount);
     }

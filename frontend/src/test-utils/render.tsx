@@ -3,10 +3,15 @@ import { render, RenderOptions } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import userEvent from '@testing-library/user-event'
 import { ThemeProvider } from '@/components/design-system/theme-provider'
+import { StoreProvider } from '@/components/providers/StoreProvider'
+import { useStore, StoreState } from '@/lib/store/createStore'
+import { createMockStore } from './store-helpers'
 
 // Create a custom render function that includes all providers
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   initialTheme?: 'light' | 'dark' | 'system'
+  initialStoreState?: Partial<StoreState>
+  withStoreProvider?: boolean
 }
 
 // Mock router context for Next.js App Router
@@ -29,16 +34,37 @@ const createTestQueryClient = () =>
     },
   })
 
+// Store-aware wrapper that initializes store before rendering
+const TestStoreWrapper = ({ 
+  children, 
+  initialState 
+}: { 
+  children: React.ReactNode
+  initialState?: Partial<StoreState>
+}) => {
+  // Initialize store with complete state before any subscriptions
+  React.useEffect(() => {
+    const completeState = createMockStore(initialState);
+    useStore.setState(completeState, true); // Replace entire state
+  }, [initialState]);
+
+  return <>{children}</>;
+};
+
 const AllTheProviders = ({ 
   children,
-  theme = 'light'
+  theme = 'light',
+  initialStoreState,
+  withStoreProvider = false
 }: { 
   children: React.ReactNode
   theme?: 'light' | 'dark' | 'system'
+  initialStoreState?: Partial<StoreState>
+  withStoreProvider?: boolean
 }) => {
   const queryClient = createTestQueryClient()
   
-  return (
+  const content = (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
         attribute="class"
@@ -47,21 +73,44 @@ const AllTheProviders = ({
         disableTransitionOnChange
       >
         <MockRouterContext>
-          {children}
+          {withStoreProvider ? (
+            <TestStoreWrapper initialState={initialStoreState}>
+              <StoreProvider>
+                {children}
+              </StoreProvider>
+            </TestStoreWrapper>
+          ) : (
+            <TestStoreWrapper initialState={initialStoreState}>
+              {children}
+            </TestStoreWrapper>
+          )}
         </MockRouterContext>
       </ThemeProvider>
     </QueryClientProvider>
-  )
+  );
+
+  return content;
 }
 
 const customRender = (
   ui: ReactElement,
   options?: CustomRenderOptions,
 ) => {
-  const { initialTheme = 'light', ...renderOptions } = options || {}
+  const { 
+    initialTheme = 'light', 
+    initialStoreState,
+    withStoreProvider = false,
+    ...renderOptions 
+  } = options || {}
   
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <AllTheProviders theme={initialTheme}>{children}</AllTheProviders>
+    <AllTheProviders 
+      theme={initialTheme}
+      initialStoreState={initialStoreState}
+      withStoreProvider={withStoreProvider}
+    >
+      {children}
+    </AllTheProviders>
   )
   
   return {
@@ -94,22 +143,31 @@ export const createMockRouter = () => ({
   asPath: '/',
 })
 
-// Helper to create mock Zustand store for testing
-export const createMockStore = <T extends Record<string, any>>(
-  initialState: T
+// Convenience functions for store-aware rendering
+export const renderWithStore = (
+  ui: ReactElement,
+  options?: CustomRenderOptions & { storeState?: Partial<StoreState> }
 ) => {
-  const store = {
-    getState: () => initialState,
-    setState: jest.fn((partial) => {
-      Object.assign(initialState, 
-        typeof partial === 'function' ? partial(initialState) : partial
-      )
-    }),
-    subscribe: jest.fn(() => jest.fn()),
-    destroy: jest.fn(),
-  }
-  return store
-}
+  return customRender(ui, {
+    ...options,
+    initialStoreState: options?.storeState,
+    withStoreProvider: false
+  });
+};
+
+export const renderWithStoreProvider = (
+  ui: ReactElement,
+  options?: CustomRenderOptions & { storeState?: Partial<StoreState> }
+) => {
+  return customRender(ui, {
+    ...options,
+    initialStoreState: options?.storeState,
+    withStoreProvider: true
+  });
+};
 
 // Import screen separately to avoid issues
 import { screen } from '@testing-library/react'
+
+// Re-export store helpers for convenience
+export { createMockStore, createMockZustandStore, resetStoreForTesting } from './store-helpers'
