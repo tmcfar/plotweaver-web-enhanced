@@ -1,4 +1,5 @@
 import { FC, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 export type LockLevel = 'soft' | 'hard' | 'frozen';
 export type LockType = 'personal' | 'editorial' | 'collaborative';
@@ -17,6 +18,8 @@ interface LockIndicatorProps {
   size?: 'sm' | 'md' | 'lg';
   showDetails?: boolean;
   interactive?: boolean;
+  isLoading?: boolean;
+  ariaLabel?: string;
 }
 
 const LOCK_CONFIG = {
@@ -95,11 +98,31 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
   onOverrideRequest,
   size = 'md',
   showDetails = true,
-  interactive = true
+  interactive = true,
+  isLoading = false,
+  ariaLabel
 }) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [showOverrideDialog, setShowOverrideDialog] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
+
+  // If loading, show loading state
+  if (isLoading) {
+    return (
+      <div className="lock-indicator relative">
+        <div
+          className={cn(
+            'flex items-center space-x-1 rounded-lg transition-all animate-pulse',
+            'bg-gray-100 border-gray-200 border',
+            SIZE_CONFIG[size].padding,
+            'cursor-not-allowed'
+          )}
+        >
+          <span className={cn(SIZE_CONFIG[size].icon, 'text-gray-400')}>⏳</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!lockLevel) {
     if (!interactive) {
@@ -108,7 +131,7 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
           className="lock-indicator-empty opacity-30"
           title="No lock"
         >
-          <span className={`${SIZE_CONFIG[size].icon} text-gray-400`}>🔓</span>
+          <span className={cn(SIZE_CONFIG[size].icon, 'text-gray-400')}>🔓</span>
         </span>
       );
     }
@@ -118,8 +141,10 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
         onClick={() => onLockToggle?.(componentId)}
         className="lock-indicator-empty opacity-30 hover:opacity-60 transition-opacity"
         title="Click to lock"
+        aria-label={ariaLabel || 'Unlock button - click to lock'}
+        disabled={isLoading}
       >
-        <span className={`${SIZE_CONFIG[size].icon} text-gray-400`}>🔓</span>
+        <span className={cn(SIZE_CONFIG[size].icon, 'text-gray-400')}>🔓</span>
       </button>
     );
   }
@@ -143,27 +168,31 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
     }).format(date);
   };
 
+  const defaultAriaLabel = `${lockConfig.label} - ${lockConfig.description}${reason ? ` - ${reason}` : ''}`;
+
   return (
     <div className="lock-indicator relative">
       <div
-        className={`
-          flex items-center space-x-1 rounded-lg transition-all
-          ${lockConfig.bgColor} ${lockConfig.borderColor} border
-          ${sizeConfig.padding}
-          ${interactive ? 'cursor-pointer hover:shadow-sm' : ''}
-        `}
+        className={cn(
+          'flex items-center space-x-1 rounded-lg transition-all',
+          lockConfig.bgColor, lockConfig.borderColor, 'border',
+          sizeConfig.padding,
+          interactive && !isLoading ? 'cursor-pointer hover:shadow-sm' : 'cursor-not-allowed'
+        )}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        onClick={interactive ? () => onLockToggle?.(componentId) : undefined}
+        onClick={interactive && !isLoading ? () => onLockToggle?.(componentId) : undefined}
+        aria-label={ariaLabel || defaultAriaLabel}
+        title={lockConfig.label}
       >
         {/* Lock Level Icon */}
-        <span className={`${sizeConfig.icon} ${lockConfig.color}`}>
+        <span className={cn(sizeConfig.icon, lockConfig.color)}>
           {lockConfig.icon}
         </span>
 
         {/* Lock Type Icon */}
         {showDetails && (
-          <span className={`${sizeConfig.icon} text-gray-600`}>
+          <span className={cn(sizeConfig.icon, 'text-gray-600')}>
             {typeConfig.icon}
           </span>
         )}
@@ -189,7 +218,7 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
         )}
 
         {/* Override Button */}
-        {canOverride && interactive && (
+        {canOverride && interactive && !isLoading && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -197,6 +226,7 @@ export const LockIndicator: FC<LockIndicatorProps> = ({
             }}
             className="text-xs text-blue-600 hover:text-blue-800 ml-1"
             title="Request override"
+            aria-label="Request override"
           >
             ⚡
           </button>
