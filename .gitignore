@@ -95,7 +95,8 @@ security_*.json
 
 # Test files
 test_*.py
-!tests/test_*.py
+!integration_tests/test_*.py
+!bff/tests/**/test_*.py
 example_*.py
 check_*.py
 
