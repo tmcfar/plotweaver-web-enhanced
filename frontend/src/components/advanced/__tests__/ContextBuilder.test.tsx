@@ -120,7 +120,9 @@ describe('ContextBuilder', () => {
       clearNotifications: jest.fn(),
     })
 
-  })  describe('Component Display', () => {
+  })
+
+  describe('Component Display', () => {
     it('displays available components', () => {
       render(<ContextBuilder {...defaultProps} />)
 
