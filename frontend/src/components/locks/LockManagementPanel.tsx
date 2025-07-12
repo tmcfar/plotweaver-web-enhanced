@@ -1,5 +1,7 @@
 import { FC, useState, useMemo } from 'react';
 import { LockIndicator, LockLevel, LockType } from './LockIndicator';
+import { LockTreeSkeleton } from '@/components/ui/skeleton';
+import { NoLocksState, SearchEmptyState, ErrorState } from '@/components/design-system/empty-states';
 
 export interface ComponentLock {
   id: string;
@@ -34,7 +36,7 @@ export interface BulkLockOperation {
   reason: string;
 }
 
-interface ProjectComponent {
+export interface ProjectComponent {
   id: string;
   name: string;
   type: 'character' | 'setting' | 'plot' | 'scene' | 'chapter';
@@ -50,6 +52,9 @@ interface LockManagementPanelProps {
   projectComponents: ProjectComponent[];
   onLockUpdate: (locks: ComponentLock[]) => void;
   onBulkOperation: (operation: BulkLockOperation) => void;
+  isLoading?: boolean;
+  error?: Error;
+  onRetry?: () => void;
 }
 
 interface LockTreeViewProps {
@@ -60,6 +65,8 @@ interface LockTreeViewProps {
   onLockUpdate: (componentId: string, lock: ComponentLock | null) => void;
   userRole: 'owner' | 'editor' | 'collaborator';
   level?: number;
+  searchTerm?: string;
+  levelFilter?: LockLevel | 'all';
 }
 
 const LockTreeView: FC<LockTreeViewProps> = ({
@@ -69,9 +76,31 @@ const LockTreeView: FC<LockTreeViewProps> = ({
   onSelectionChange,
   onLockUpdate,
   userRole,
-  level = 0
+  level = 0,
+  searchTerm = '',
+  levelFilter = 'all'
 }) => {
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['root']));
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
+    // Expand all root level components by default
+    const rootComponents = components.filter(c => !c.parent).map(c => c.id)
+    return new Set(['root', ...rootComponents])
+  });
+
+  const filteredComponents = useMemo(() => {
+    return components.filter(component => {
+      // Search filter
+      const matchesSearch = searchTerm === '' || 
+        component.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Level filter
+      const currentLock = lockState.locks[component.id];
+      const matchesLevel = levelFilter === 'all' || 
+        (levelFilter && currentLock?.level === levelFilter) ||
+        (levelFilter === 'unlocked' && !currentLock);
+      
+      return matchesSearch && matchesLevel;
+    });
+  }, [components, searchTerm, levelFilter, lockState.locks]);
 
   const toggleExpanded = (componentId: string) => {
     const newExpanded = new Set(expandedNodes);
@@ -124,9 +153,20 @@ const LockTreeView: FC<LockTreeViewProps> = ({
     return icons[type as keyof typeof icons] || '📁';
   };
 
+  if (filteredComponents.length === 0 && searchTerm) {
+    return (
+      <div className="p-4">
+        <SearchEmptyState 
+          query={searchTerm} 
+          onClearSearch={() => {}} 
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="lock-tree-view">
-      {components.map((component) => {
+      {filteredComponents.map((component) => {
         const isExpanded = expandedNodes.has(component.id);
         const isSelected = selectedComponents.has(component.id);
         const hasChildren = component.children && component.children.length > 0;
@@ -195,6 +235,8 @@ const LockTreeView: FC<LockTreeViewProps> = ({
                 onLockUpdate={onLockUpdate}
                 userRole={userRole}
                 level={level + 1}
+                searchTerm={searchTerm}
+                levelFilter={levelFilter}
               />
             )}
           </div>
@@ -239,6 +281,7 @@ const AuditTrailModal: FC<AuditTrailModalProps> = ({ projectId, onClose }) => {
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600"
+              aria-label="Close audit trail"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -279,13 +322,18 @@ export const LockManagementPanel: FC<LockManagementPanelProps> = ({
   userRole,
   projectComponents,
   onLockUpdate,
-  onBulkOperation
+  onBulkOperation,
+  isLoading = false,
+  error,
+  onRetry
 }) => {
   const [selectedComponents, setSelectedComponents] = useState<Set<string>>(new Set());
   const [showAuditTrail, setShowAuditTrail] = useState(false);
   const [bulkLockLevel, setBulkLockLevel] = useState<LockLevel>('soft');
   const [bulkReason, setBulkReason] = useState('');
   const [showBulkDialog, setShowBulkDialog] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [levelFilter, setLevelFilter] = useState<LockLevel | 'all' | 'unlocked'>('all');
 
   const lockStats = useMemo(() => {
     const locks = Object.values(lockState.locks);
@@ -329,6 +377,45 @@ export const LockManagementPanel: FC<LockManagementPanelProps> = ({
     }
   };
 
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="lock-management-panel h-full flex flex-col bg-white border border-gray-200 rounded-lg">
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Lock Management</h3>
+        </div>
+        <div className="flex-1">
+          <ErrorState
+            title="Error loading locks"
+            description={error.message}
+            onRetry={onRetry}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="lock-management-panel h-full flex flex-col bg-white border border-gray-200 rounded-lg">
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Lock Management</h3>
+        </div>
+        <div className="flex-1" data-testid="lock-panel-skeleton">
+          <LockTreeSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  const hasComponents = projectComponents.length > 0;
+  const hasLocks = Object.keys(lockState.locks).length > 0;
+
   return (
     <div className="lock-management-panel h-full flex flex-col bg-white border border-gray-200 rounded-lg">
       {/* Header */}
@@ -349,10 +436,56 @@ export const LockManagementPanel: FC<LockManagementPanelProps> = ({
           <span className="text-orange-600">Hard: {lockStats.hard}</span>
           <span className="text-red-600">Frozen: {lockStats.frozen}</span>
         </div>
+
+        {/* Search and Filter Controls */}
+        {hasComponents && (
+          <div className="space-y-3">
+            {/* Search Input */}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search components..."
+                className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {searchTerm && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
+                  title="Clear search"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Level Filter */}
+            <div className="flex items-center space-x-3">
+              <label htmlFor="level-filter" className="text-sm font-medium text-gray-700">
+                Filter by lock level:
+              </label>
+              <select
+                id="level-filter"
+                value={levelFilter}
+                onChange={(e) => setLevelFilter(e.target.value as LockLevel | 'all' | 'unlocked')}
+                className="px-3 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All</option>
+                <option value="unlocked">Unlocked</option>
+                <option value="soft">Soft Lock</option>
+                <option value="hard">Hard Lock</option>
+                <option value="frozen">Frozen</option>
+              </select>
+            </div>
+          </div>
+        )}
         
         {/* Bulk Operations */}
         {selectedComponents.size > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-blue-800 font-medium">
                 {selectedComponents.size} components selected
@@ -376,16 +509,37 @@ export const LockManagementPanel: FC<LockManagementPanelProps> = ({
         )}
       </div>
 
-      {/* Tree View */}
-      <div className="flex-1 overflow-y-auto p-2">
-        <LockTreeView
-          components={projectComponents}
-          lockState={lockState}
-          selectedComponents={selectedComponents}
-          onSelectionChange={setSelectedComponents}
-          onLockUpdate={handleLockUpdate}
-          userRole={userRole}
-        />
+      {/* Tree View / Empty State */}
+      <div className="flex-1 overflow-y-auto">
+        {!hasComponents ? (
+          <div className="p-4">
+            <div className="text-center text-gray-500 py-8">
+              <p>No components in context</p>
+              <p className="text-sm">Add components from the browser to build scene context</p>
+            </div>
+          </div>
+        ) : !hasLocks && searchTerm === '' && levelFilter === 'all' ? (
+          <NoLocksState />
+        ) : searchTerm && !hasComponents ? (
+          <div className="p-4">
+            <div className="text-center text-gray-500 py-8">
+              <p>No components match your search</p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-2">
+            <LockTreeView
+              components={projectComponents}
+              lockState={lockState}
+              selectedComponents={selectedComponents}
+              onSelectionChange={setSelectedComponents}
+              onLockUpdate={handleLockUpdate}
+              userRole={userRole}
+              searchTerm={searchTerm}
+              levelFilter={levelFilter}
+            />
+          </div>
+        )}
       </div>
 
       {/* Footer */}
@@ -419,10 +573,11 @@ export const LockManagementPanel: FC<LockManagementPanelProps> = ({
             </div>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="bulk-lock-level" className="block text-sm font-medium text-gray-700 mb-2">
                 Lock Level:
               </label>
               <select
+                id="bulk-lock-level"
                 value={bulkLockLevel}
                 onChange={(e) => setBulkLockLevel(e.target.value as LockLevel)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -434,10 +589,11 @@ export const LockManagementPanel: FC<LockManagementPanelProps> = ({
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="bulk-reason" className="block text-sm font-medium text-gray-700 mb-2">
                 Reason:
               </label>
               <textarea
+                id="bulk-reason"
                 value={bulkReason}
                 onChange={(e) => setBulkReason(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
