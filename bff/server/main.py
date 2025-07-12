@@ -24,7 +24,7 @@ from .feedback_endpoints import router as feedback_router
 from .git_endpoints import router as git_read_router
 from .write_proxy import router as write_proxy_router
 from .story_proxy import router as story_proxy_router
-from bff.services.git_manager import GitRepoManager
+from server.git_manager import BFFGitManager
 
 app = FastAPI(
     title="PlotWeaver BFF (Backend for Frontend)",
@@ -45,12 +45,12 @@ app = FastAPI(
     version="2.0.0",
     servers=[
         {"url": "http://localhost:8000", "description": "Local development BFF"},
-        {"url": "https://bff.plotweaver.io", "description": "Production BFF"}
-    ]
+        {"url": "https://bff.plotweaver.io", "description": "Production BFF"},
+    ],
 )
 
 # Initialize Git manager
-git_manager = GitRepoManager()
+git_manager = BFFGitManager(repo_url="")
 
 # Include routers
 app.include_router(worldbuilding_router)

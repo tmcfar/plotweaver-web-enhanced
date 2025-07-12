@@ -137,7 +137,7 @@ class EnhancedGitRepoManager(GitRepoManager):
             # Get staged files from index
             for (path, stage), blob_info in self.repo.index.entries.items():
                 if stage == 0:  # Stage 0 means staged for commit
-                    staged_files.append(path)
+                    staged_files.append(str(path))
 
             return staged_files
 
@@ -394,7 +394,7 @@ class EnhancedGitRepoManager(GitRepoManager):
     async def get_working_tree_status(self) -> Dict[str, List[str]]:
         """Get comprehensive working tree status."""
         try:
-            status = {
+            status: Dict[str, List[str]] = {
                 "modified": [],
                 "added": [],
                 "deleted": [],
