@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plotweaver-bff"
+version = "2.0.0"
+description = "Backend for Frontend service for PlotWeaver web application"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+asyncio_mode = "auto"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--cov=tests",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-fail-under=70",
+]
+markers = [
+    "unit: Unit tests (fast, isolated)",
+    "integration: Integration tests (may require services)",
+    "slow: Tests that take > 1s to run",
+]
