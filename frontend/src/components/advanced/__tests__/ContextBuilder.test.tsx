@@ -19,12 +19,12 @@ jest.mock('@hello-pangea/dnd', () => ({
   ),
   Droppable: ({ children, droppableId }: any) => (
     <div data-testid={`droppable-${droppableId}`}>
-      {children({ innerRef: () => {}, droppableProps: {}, placeholder: null })}
+      {children({ innerRef: () => { }, droppableProps: {}, placeholder: null })}
     </div>
   ),
   Draggable: ({ children, draggableId, index }: any) => (
     <div data-testid={`draggable-${draggableId}`}>
-      {children({ innerRef: () => {}, draggableProps: {}, dragHandleProps: {} }, {})}
+      {children({ innerRef: () => { }, draggableProps: {}, dragHandleProps: {} }, {})}
     </div>
   ),
 }));
@@ -96,16 +96,19 @@ describe('ContextBuilder', () => {
     });
 
     mockFetchAvailableComponents.mockResolvedValue(mockComponents);
+    mockValidateContext.mockReset();
+    mockSuggestComponents.mockReset();
+    mockBuildContext.mockReset();
   });
 
   const renderComponent = (availableComponents = mockComponents) => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <ContextBuilder 
-          sceneId="test-scene" 
+        <ContextBuilder
+          sceneId="test-scene"
           availableComponents={availableComponents}
           currentContext={[]}
-          onContextUpdate={() => {}}
+          onContextUpdate={() => { }}
           onLockValidation={async () => ({ valid: true, issues: [], suggestions: [], estimatedTokens: 0 })}
         />
       </QueryClientProvider>
@@ -138,7 +141,7 @@ describe('ContextBuilder', () => {
     await waitFor(() => {
       const component1 = screen.getByTestId('component-component-1');
       const component3 = screen.getByTestId('component-component-3');
-      
+
       expect(component1.querySelector('[data-testid="lock-indicator"]')).toBeInTheDocument();
       expect(component3.querySelector('[data-testid="lock-indicator"]')).toBeInTheDocument();
     });

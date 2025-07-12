@@ -52,14 +52,14 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
   },
   ref
 ) => {
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['node-0', 'node-1', 'node-3']));
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
   const [focusedNode, setFocusedNode] = useState<string | null>(null);
   const [internalSearch, setInternalSearch] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const listRef = useRef<List>(null);
 
-  const { locks, isLoading } = useLockStore(projectId || 'default');
+  const { locks } = useLockStore();
 
   // Use internal search for searchable components
   const effectiveSearch = searchable ? internalSearch : '';
@@ -67,12 +67,12 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
   // Flatten tree structure for virtualization with memoization
   const flattenedNodes: FlattenedNode[] = useMemo(() => {
     const flatten = (
-      nodes: TreeItem[], 
+      nodes: TreeItem[],
       result: FlattenedNode[] = [],
       depth: number = 0,
       searchFilter: string = ''
     ): FlattenedNode[] => {
-      
+
       const filterNode = (node: TreeItem): boolean => {
         if (searchFilter && !node.name.toLowerCase().includes(searchFilter.toLowerCase())) {
           return false;
@@ -82,7 +82,7 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
 
       const hasMatchingChildren = (node: TreeItem): boolean => {
         if (!node.children) return false;
-        return node.children.some(child => 
+        return node.children.some(child =>
           filterNode(child) || hasMatchingChildren(child)
         );
       };
@@ -91,7 +91,7 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
         const isExpanded = expandedNodes.has(node.id);
         const hasChildren = node.children && node.children.length > 0;
         const shouldShow = filterNode(node) || hasMatchingChildren(node);
-        
+
         if (shouldShow) {
           result.push({
             ...node,
@@ -100,16 +100,16 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
             isExpanded
           });
         }
-        
+
         // Add children if expanded and parent should be shown
         if (isExpanded && node.children && shouldShow) {
           flatten(node.children, result, depth + 1, searchFilter);
         }
       });
-      
+
       return result;
     };
-    
+
     return flatten(items, [], 0, effectiveSearch);
   }, [items, expandedNodes, effectiveSearch]);
 
@@ -121,7 +121,7 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
     if (currentIndex === -1) return;
 
     let newIndex = currentIndex;
-    
+
     switch (event.key) {
       case 'ArrowDown':
         event.preventDefault();
@@ -180,16 +180,15 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
       }
       return newSet;
     });
-  }, []);
-
-  const handleNodeClick = useCallback((node: FlattenedNode, event: React.MouseEvent) => {
+  }, []); const handleNodeClick = useCallback((node: FlattenedNode, event: React.MouseEvent) => {
     event.stopPropagation();
     setSelectedNode(node.id);
     setFocusedNode(node.id);
-    
-    if (node.hasChildren) {
-      toggleExpanded(node.id);
-    }
+  }, []);
+
+  const handleExpandClick = useCallback((nodeId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    toggleExpanded(nodeId);
   }, [toggleExpanded]);
 
   const handleLockToggle = useCallback((nodeId: string, event: React.MouseEvent) => {
@@ -228,13 +227,11 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
     return (
       <div
         style={style}
-        className={`flex items-center px-2 py-1 cursor-pointer select-none transition-colors ${
-          isSelected 
-            ? 'bg-blue-100 border-l-2 border-blue-500' 
-            : 'hover:bg-gray-50'
-        } ${
-          isFocused ? 'focused' : ''
-        }`}
+        className={`flex items-center px-2 py-1 cursor-pointer select-none transition-colors ${isSelected
+          ? 'bg-blue-100 border-l-2 border-blue-500'
+          : 'hover:bg-gray-50'
+          } ${isFocused ? 'focused bg-blue-50' : ''
+          }`}
         onClick={(e) => handleNodeClick(node, e)}
         data-testid={`tree-item-${node.id}`}
         role="treeitem"
@@ -245,26 +242,21 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
         aria-setsize={flattenedNodes.length}
         tabIndex={isFocused ? 0 : -1}
       >
-        <div 
-          style={{ marginLeft: indentLevel }} 
+        <div
+          style={{ marginLeft: indentLevel }}
           className="flex items-center space-x-2 flex-1 min-w-0"
         >
           {/* Expand/Collapse Button */}
           {node.hasChildren ? (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleExpanded(node.id);
-              }}
+              onClick={(e) => handleExpandClick(node.id, e)}
               className="p-1 hover:bg-gray-200 rounded flex-shrink-0"
-              aria-label={node.isExpanded ? 'Collapse' : 'Expand'}
+              aria-label={node.isExpanded ? 'Collapse' : 'Expand'} aria-expanded={node.isExpanded}
               data-testid={`expand-${node.id}`}
-              aria-expanded={node.isExpanded}
             >
-              <ChevronRight 
-                className={`w-3 h-3 transition-transform ${
-                  node.isExpanded ? 'rotate-90' : ''
-                }`} 
+              <ChevronRight
+                className={`w-3 h-3 transition-transform ${node.isExpanded ? 'rotate-90' : ''
+                  }`}
               />
             </button>
           ) : (
@@ -288,7 +280,7 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
           <span className="text-sm text-gray-900 truncate flex-1 min-w-0">
             {effectiveSearch && node.name.toLowerCase().includes(effectiveSearch.toLowerCase()) ? (
               <>
-                {node.name.split(new RegExp(`(${effectiveSearch})`, 'gi')).map((part, i) => 
+                {node.name.split(new RegExp(`(${effectiveSearch})`, 'gi')).map((part, i) =>
                   part.toLowerCase() === effectiveSearch.toLowerCase() ? (
                     <span key={i} data-testid="highlight" className="bg-yellow-200">{part}</span>
                   ) : (
@@ -305,32 +297,28 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
           <div className="flex items-center space-x-1 flex-shrink-0">
             {isLocked && (
               <>
-                <span 
-                  className={`px-1 py-0.5 text-xs rounded ${
-                    isLocked.level === 'soft' ? 'bg-yellow-100 text-yellow-800' :
+                <span
+                  className={`px-1 py-0.5 text-xs rounded ${isLocked.level === 'soft' ? 'bg-yellow-100 text-yellow-800' :
                     isLocked.level === 'hard' ? 'bg-orange-100 text-orange-800' :
-                    'bg-red-100 text-red-800'
-                  }`}
+                      'bg-red-100 text-red-800'
+                    }`}
                 >
                   {isLocked.level}
                 </span>
-                <Lock 
-                  className={`w-3 h-3 ${
-                    isLocked.level === 'soft' ? 'text-yellow-500' :
+                <Lock
+                  className={`w-3 h-3 ${isLocked.level === 'soft' ? 'text-yellow-500' :
                     isLocked.level === 'hard' ? 'text-orange-500' :
-                    'text-red-500'
-                  }`}
+                      'text-red-500'
+                    }`}
                   data-testid={`lock-${isLocked.level}-${node.id}`}
-                  title={isLocked.reason}
                 />
               </>
             )}
-            
+
             <button
               onClick={(e) => handleLockToggle(node.id, e)}
-              className={`p-1 rounded hover:bg-gray-200 ${
-                isLocked ? 'text-orange-500' : 'text-gray-400 hover:text-gray-600'
-              }`}
+              className={`p-1 rounded hover:bg-gray-200 ${isLocked ? 'text-orange-500' : 'text-gray-400 hover:text-gray-600'
+                }`}
               aria-label={isLocked ? `Unlock ${node.name}` : `Lock ${node.name}`}
             >
               <Lock className="w-3 h-3" />
@@ -343,7 +331,7 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
 
   Row.displayName = 'TreeRow';
 
-  if (isLoading) {
+  if (false) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -370,15 +358,14 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
               </div>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`p-2 border rounded-md hover:bg-gray-50 ${
-                  showFilters ? 'bg-gray-100 text-blue-600' : 'text-gray-600'
-                }`}
+                className={`p-2 border rounded-md hover:bg-gray-50 ${showFilters ? 'bg-gray-100 text-blue-600' : 'text-gray-600'
+                  }`}
               >
                 <Filter className="w-4 h-4" />
               </button>
             </div>
           )}
-          
+
           {showControls && (
             <div className="flex items-center justify-between pt-2 border-t">
               <div></div>
@@ -418,8 +405,6 @@ export const VirtualizedLockTree = forwardRef<List, VirtualizedLockTreeProps>((
             itemSize={itemHeight}
             width={width}
             overscanCount={5}
-            role="tree"
-            aria-label="Component lock tree"
           >
             {rowComponent || Row}
           </List>
