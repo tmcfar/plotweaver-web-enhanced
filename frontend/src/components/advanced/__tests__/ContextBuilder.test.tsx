@@ -9,12 +9,12 @@ jest.mock('@/lib/store/lockStore')
 jest.mock('@/components/notifications/NotificationSystem')
 jest.mock('@hello-pangea/dnd', () => ({
   DragDropContext: ({ children }: any) => children,
-  Droppable: ({ children }: any) => children({ 
+  Droppable: ({ children }: any) => children({
     droppableProps: {},
     innerRef: jest.fn(),
-    placeholder: null 
+    placeholder: null
   }),
-  Draggable: ({ children, draggableId }: any) => children({ 
+  Draggable: ({ children, draggableId }: any) => children({
     draggableProps: { 'data-testid': `draggable-${draggableId}` },
     dragHandleProps: { 'data-testid': `drag-handle-${draggableId}` },
     innerRef: jest.fn(),
@@ -111,7 +111,11 @@ describe('ContextBuilder', () => {
 
     mockUseNotifications.mockReturnValue({
       addNotification: mockAddNotification,
-      notifications: [],
+      notifyLockUpdate: jest.fn(),
+      notifyConflict: jest.fn(),
+      notifySuccess: jest.fn(),
+      notifyError: jest.fn(),
+      notifyConnectionStatus: jest.fn(),
       removeNotification: jest.fn(),
       clearNotifications: jest.fn(),
     })
@@ -123,9 +127,13 @@ describe('ContextBuilder', () => {
       render(<ContextBuilder {...defaultProps} />)
 
       expect(screen.getByText('Available Components')).toBeInTheDocument()
+      expect(screen.getByText('Scene Context')).toBeInTheDocument()
+      
+      // Check that available components are shown
       expect(screen.getByText('John Doe')).toBeInTheDocument()
       expect(screen.getByText('Police Station')).toBeInTheDocument()
       expect(screen.getByText('Murder Mystery')).toBeInTheDocument()
+      expect(screen.getByText('Opening Scene')).toBeInTheDocument()
     })
 
     it('shows component descriptions', () => {
@@ -240,7 +248,7 @@ describe('ContextBuilder', () => {
       const { user } = render(<ContextBuilder {...defaultProps} onContextUpdate={onContextUpdate} />)
 
       const removeButton = screen.getAllByRole('button').find(btn => btn.querySelector('.lucide-x'))
-      
+
       if (removeButton) {
         await user.click(removeButton)
         expect(onContextUpdate).toHaveBeenCalledWith([])
@@ -299,7 +307,7 @@ describe('ContextBuilder', () => {
       }
 
       const { rerender } = render(<ContextBuilder {...defaultProps} />)
-      
+
       const propsWithWarning = {
         ...defaultProps,
         onLockValidation: jest.fn().mockResolvedValue(warningValidation)
@@ -344,7 +352,7 @@ describe('ContextBuilder', () => {
         const suggestedComponent = screen.queryByText('AI Suggestions')?.closest('div')?.querySelector('.bg-yellow-50')
         if (suggestedComponent) {
           user.click(suggestedComponent)
-          
+
           expect(onContextUpdate).toHaveBeenCalledWith(expect.arrayContaining([
             expect.objectContaining({
               reason: 'AI suggested'
@@ -384,7 +392,7 @@ describe('ContextBuilder', () => {
 
       const preview = screen.getByText('Context Preview').parentElement
       const items = preview?.querySelectorAll('.flex.items-start')
-      
+
       // Should be sorted by relevance (highest first)
       expect(items?.[0]).toHaveTextContent('Police Station')
       expect(items?.[1]).toHaveTextContent('John Doe')
@@ -416,7 +424,7 @@ describe('ContextBuilder', () => {
 
       // Simulate drag end
       const dragDropContext = screen.getByRole('generic').querySelector('[data-rfd-drag-drop-context-id]')
-      
+
       // Note: Actually testing drag and drop would require more complex mocking
       expect(screen.getByTestId('drag-handle-context-1')).toBeInTheDocument()
     })

@@ -69,16 +69,16 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
   // Filter available components
   const filteredComponents = useMemo(() => {
     return availableComponents.filter(component => {
-      const matchesSearch = !searchTerm || 
+      const matchesSearch = !searchTerm ||
         component.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         component.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         component.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+
       const matchesType = selectedType === 'all' || component.type === selectedType;
-      
+
       // Don't show components already in context
       const notInContext = !context.some(item => item.componentId === component.id);
-      
+
       return matchesSearch && matchesType && notInContext;
     });
   }, [availableComponents, searchTerm, selectedType, context]);
@@ -121,7 +121,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
       const mockSuggestions = availableComponents
         .filter(comp => !context.some(item => item.componentId === comp.id))
         .slice(0, 3);
-      
+
       setSuggestions(mockSuggestions);
     } catch (error) {
       console.error('Failed to generate suggestions:', error);
@@ -149,7 +149,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
     const updatedContext = context
       .filter(item => item.id !== contextItemId)
       .map((item, index) => ({ ...item, order: index }));
-    
+
     setContext(updatedContext);
     onContextUpdate(updatedContext);
   }, [context, onContextUpdate]);
@@ -199,7 +199,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
       <div className="w-1/3 border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold mb-3">Available Components</h3>
-          
+
           {/* Search */}
           <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -231,13 +231,12 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {filteredComponents.map(component => {
             const isLocked = locks[component.id];
-            
+
             return (
               <div
                 key={component.id}
-                className={`p-3 border rounded-lg cursor-pointer hover:border-blue-300 transition-colors ${
-                  isLocked ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-200'
-                }`}
+                className={`p-3 border rounded-lg cursor-pointer hover:border-blue-300 transition-colors ${isLocked ? 'bg-orange-50 border-orange-200' : 'bg-gray-50 border-gray-200'
+                  }`}
                 onClick={() => addToContext(component)}
               >
                 <div className="flex items-start justify-between">
@@ -327,7 +326,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
               </div>
             </div>
           </div>
-          
+
           {validation && validation.issues.length > 0 && (
             <div className="mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
               <h4 className="text-sm font-medium text-yellow-800 mb-1">Validation Issues:</h4>
@@ -363,9 +362,8 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
-                            className={`p-4 border rounded-lg bg-white transition-shadow ${
-                              snapshot.isDragging ? 'shadow-lg' : 'shadow-sm'
-                            }`}
+                            className={`p-4 border rounded-lg bg-white transition-shadow ${snapshot.isDragging ? 'shadow-lg' : 'shadow-sm'
+                              }`}
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex items-start space-x-3 flex-1">
@@ -375,7 +373,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
                                 >
                                   <div className="w-2 h-8 bg-gray-300 rounded"></div>
                                 </div>
-                                
+
                                 <div className="flex-1">
                                   <div className="flex items-center space-x-2 mb-2">
                                     <span className="text-lg">{getComponentIcon(item.component.type)}</span>
@@ -384,9 +382,9 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
                                       {item.component.type}
                                     </span>
                                   </div>
-                                  
+
                                   <p className="text-sm text-gray-600 mb-2">{item.reason}</p>
-                                  
+
                                   <div className="flex items-center space-x-4">
                                     <label className="text-sm text-gray-700">
                                       Relevance:
@@ -406,7 +404,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
                                   </div>
                                 </div>
                               </div>
-                              
+
                               <button
                                 onClick={() => removeFromContext(item.id)}
                                 className="p-1 text-red-600 hover:bg-red-100 rounded"
