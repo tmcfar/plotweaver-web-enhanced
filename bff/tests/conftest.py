@@ -26,9 +26,10 @@ try:
     from server.main import app
 except ImportError:
     # Create a test FastAPI app with mock health and auth endpoints
-    from fastapi import FastAPI, HTTPException, Depends, status
+    from fastapi import FastAPI, HTTPException, Depends, status, Query
     from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
     from pydantic import BaseModel
+    from typing import Optional
     
     app = FastAPI(title="Test App", version="2.0.0")
     security = HTTPBearer()
@@ -421,6 +422,332 @@ except ImportError:
                 "can_proceed": can_proceed
             }
         }
+    
+    # Mock project system storage
+    projects_storage = {}  # project_id -> Project
+    user_projects = {}  # user_id -> [project_ids]
+    project_collaborators = {}  # project_id -> [user_ids]
+    
+    # Project models
+    class Project(BaseModel):
+        id: str
+        name: str
+        description: str = ""
+        status: str = "draft"  # 'draft' | 'active' | 'archived'
+        visibility: str = "private"  # 'private' | 'public'
+        owner_id: str
+        created_at: str
+        updated_at: str
+        metadata: dict = {}
+    
+    class ProjectCreate(BaseModel):
+        name: str
+        description: str = ""
+        visibility: str = "private"
+        metadata: dict = {}
+    
+    class ProjectUpdate(BaseModel):
+        name: str = None
+        description: str = None
+        status: str = None
+        visibility: str = None
+        metadata: dict = None
+    
+    class CollaboratorAdd(BaseModel):
+        user_id: str
+        role: str = "collaborator"  # 'collaborator' | 'viewer'
+    
+    # Project endpoints
+    @app.get("/api/projects")
+    async def list_projects(
+        status: Optional[str] = None,
+        visibility: Optional[str] = None,
+        limit: int = Query(50, ge=1, le=100),
+        offset: int = Query(0, ge=0),
+        payload: dict = Depends(verify_token)
+    ):
+        """List user's projects."""
+        user_id = payload.get("sub")
+        user_project_ids = user_projects.get(user_id, [])
+        
+        # Get projects owned by user
+        owned_projects = [
+            projects_storage[pid] for pid in user_project_ids 
+            if pid in projects_storage
+        ]
+        
+        # Get projects where user is collaborator
+        collaborator_projects = []
+        for project_id, collaborators in project_collaborators.items():
+            if user_id in collaborators and project_id in projects_storage:
+                collaborator_projects.append(projects_storage[project_id])
+        
+        all_projects = owned_projects + collaborator_projects
+        
+        # Apply filters
+        if status:
+            all_projects = [p for p in all_projects if p["status"] == status]
+        if visibility:
+            all_projects = [p for p in all_projects if p["visibility"] == visibility]
+        
+        # Apply pagination
+        total = len(all_projects)
+        paginated_projects = all_projects[offset:offset + limit]
+        
+        return {
+            "projects": paginated_projects,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+    
+    @app.post("/api/projects")
+    async def create_project(
+        project: ProjectCreate,
+        payload: dict = Depends(verify_token)
+    ):
+        """Create a new project."""
+        user_id = payload.get("sub")
+        
+        # Validate project name
+        if not project.name or not project.name.strip():
+            raise HTTPException(status_code=422, detail="Project name cannot be empty")
+        
+        if len(project.name) > 200:
+            raise HTTPException(status_code=422, detail="Project name too long")
+        
+        if '\x00' in project.name or '\n' in project.name:
+            raise HTTPException(status_code=422, detail="Project name contains invalid characters")
+        
+        # Check if user already has a project with this name
+        user_project_ids = user_projects.get(user_id, [])
+        for pid in user_project_ids:
+            if pid in projects_storage and projects_storage[pid]["name"] == project.name:
+                raise HTTPException(status_code=409, detail="Project name already exists")
+        
+        # Check project limits (max 10 projects per user for testing)
+        if len(user_project_ids) >= 10:
+            raise HTTPException(status_code=403, detail="Maximum project limit reached")
+        
+        project_id = f"proj_{int(time.time())}_{user_id.split('-')[-1]}"
+        now = datetime.now(timezone.utc).isoformat()
+        
+        project_data = {
+            "id": project_id,
+            "name": project.name.strip(),
+            "description": project.description,
+            "status": "draft",
+            "visibility": project.visibility,
+            "owner_id": user_id,
+            "created_at": now,
+            "updated_at": now,
+            "metadata": project.metadata
+        }
+        
+        projects_storage[project_id] = project_data
+        
+        if user_id not in user_projects:
+            user_projects[user_id] = []
+        user_projects[user_id].append(project_id)
+        
+        return {"success": True, "project": project_data}
+    
+    @app.get("/api/projects/{project_id}")
+    async def get_project(
+        project_id: str,
+        payload: dict = Depends(verify_token)
+    ):
+        """Get project details."""
+        if project_id not in projects_storage:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        project = projects_storage[project_id]
+        user_id = payload.get("sub")
+        
+        # Check access permissions
+        is_owner = project["owner_id"] == user_id
+        is_collaborator = user_id in project_collaborators.get(project_id, [])
+        is_public = project["visibility"] == "public"
+        
+        if not (is_owner or is_collaborator or is_public):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Add collaborator info
+        collaborators = project_collaborators.get(project_id, [])
+        project_with_collaborators = {
+            **project,
+            "collaborators": collaborators,
+            "user_role": "owner" if is_owner else "collaborator" if is_collaborator else "viewer"
+        }
+        
+        return {"project": project_with_collaborators}
+    
+    @app.put("/api/projects/{project_id}")
+    async def update_project(
+        project_id: str,
+        update: ProjectUpdate,
+        payload: dict = Depends(verify_token)
+    ):
+        """Update project."""
+        if project_id not in projects_storage:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        project = projects_storage[project_id]
+        user_id = payload.get("sub")
+        
+        # Only owner can update project
+        if project["owner_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Only project owner can update")
+        
+        # Update fields
+        update_data = update.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            if value is not None:
+                project[field] = value
+        
+        project["updated_at"] = datetime.now(timezone.utc).isoformat()
+        projects_storage[project_id] = project
+        
+        return {"success": True, "project": project}
+    
+    @app.delete("/api/projects/{project_id}")
+    async def delete_project(
+        project_id: str,
+        payload: dict = Depends(verify_token)
+    ):
+        """Delete project."""
+        if project_id not in projects_storage:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        project = projects_storage[project_id]
+        user_id = payload.get("sub")
+        
+        # Only owner can delete project
+        if project["owner_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Only project owner can delete")
+        
+        # Clean up related data
+        if project_id in project_locks:
+            del project_locks[project_id]
+        if project_id in project_conflicts:
+            del project_conflicts[project_id]
+        if project_id in lock_history:
+            del lock_history[project_id]
+        if project_id in project_collaborators:
+            del project_collaborators[project_id]
+        
+        # Remove from user's project list
+        if user_id in user_projects:
+            user_projects[user_id] = [pid for pid in user_projects[user_id] if pid != project_id]
+        
+        del projects_storage[project_id]
+        
+        return {"success": True}
+    
+    @app.get("/api/projects/{project_id}/collaborators")
+    async def list_collaborators(
+        project_id: str,
+        payload: dict = Depends(verify_token)
+    ):
+        """List project collaborators."""
+        if project_id not in projects_storage:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        project = projects_storage[project_id]
+        user_id = payload.get("sub")
+        
+        # Check access permissions
+        is_owner = project["owner_id"] == user_id
+        is_collaborator = user_id in project_collaborators.get(project_id, [])
+        
+        if not (is_owner or is_collaborator):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        collaborators = project_collaborators.get(project_id, [])
+        collaborator_details = []
+        
+        for collab_id in collaborators:
+            # Mock collaborator details
+            collaborator_details.append({
+                "user_id": collab_id,
+                "username": f"user_{collab_id.split('-')[-1]}",
+                "role": "collaborator",
+                "added_at": datetime.now(timezone.utc).isoformat()
+            })
+        
+        return {
+            "collaborators": collaborator_details,
+            "count": len(collaborator_details)
+        }
+    
+    @app.post("/api/projects/{project_id}/collaborators")
+    async def add_collaborator(
+        project_id: str,
+        collaborator: CollaboratorAdd,
+        payload: dict = Depends(verify_token)
+    ):
+        """Add collaborator to project."""
+        if project_id not in projects_storage:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        project = projects_storage[project_id]
+        user_id = payload.get("sub")
+        
+        # Only owner can add collaborators
+        if project["owner_id"] != user_id:
+            raise HTTPException(status_code=403, detail="Only project owner can add collaborators")
+        
+        # Check if already a collaborator
+        if project_id not in project_collaborators:
+            project_collaborators[project_id] = []
+        
+        if collaborator.user_id in project_collaborators[project_id]:
+            raise HTTPException(status_code=409, detail="User is already a collaborator")
+        
+        # Don't allow owner to add themselves
+        if collaborator.user_id == user_id:
+            raise HTTPException(status_code=400, detail="Cannot add project owner as collaborator")
+        
+        project_collaborators[project_id].append(collaborator.user_id)
+        
+        return {
+            "success": True,
+            "collaborator": {
+                "user_id": collaborator.user_id,
+                "role": collaborator.role,
+                "added_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    
+    @app.delete("/api/projects/{project_id}/collaborators/{user_id}")
+    async def remove_collaborator(
+        project_id: str,
+        user_id: str,
+        payload: dict = Depends(verify_token)
+    ):
+        """Remove collaborator from project."""
+        if project_id not in projects_storage:
+            raise HTTPException(status_code=404, detail="Project not found")
+        
+        project = projects_storage[project_id]
+        current_user_id = payload.get("sub")
+        
+        # Only owner can remove collaborators, or collaborator can remove themselves
+        is_owner = project["owner_id"] == current_user_id
+        is_self_removal = current_user_id == user_id
+        
+        if not (is_owner or is_self_removal):
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        if project_id not in project_collaborators:
+            raise HTTPException(status_code=404, detail="Collaborator not found")
+        
+        if user_id not in project_collaborators[project_id]:
+            raise HTTPException(status_code=404, detail="Collaborator not found")
+        
+        project_collaborators[project_id].remove(user_id)
+        
+        return {"success": True}
 
 
 # Use environment variable for JWT secret with test default
