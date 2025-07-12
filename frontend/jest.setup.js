@@ -84,7 +84,17 @@ afterAll(() => {
   console.error = originalError
 })
 
+// Mock browser timer functions as spies
+global.setInterval = jest.fn(setInterval)
+global.clearInterval = jest.fn(clearInterval)
+global.setTimeout = jest.fn(setTimeout)
+global.clearTimeout = jest.fn(clearTimeout)
+
 // Clean up after each test
 afterEach(() => {
   jest.clearAllMocks()
 })
+
+// Mock requestAnimationFrame
+global.requestAnimationFrame = jest.fn(cb => setTimeout(cb, 16))
+global.cancelAnimationFrame = jest.fn(id => clearTimeout(id))
