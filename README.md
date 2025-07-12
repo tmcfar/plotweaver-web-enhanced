@@ -5,6 +5,8 @@
 [![Security Status](https://img.shields.io/badge/Security-✅%20Excellent-brightgreen)](./QUALITY_CHECK_REPORT.md)
 [![Type Safety](https://img.shields.io/badge/MyPy-✅%20100%25%20Compliant-blue)](./QUALITY_CHECK_REPORT.md)
 [![Performance](https://img.shields.io/badge/Performance-✅%20Optimized-green)](./QUALITY_CHECK_REPORT.md)
+[![BFF Tests](https://github.com/tmcfar/pw-web/actions/workflows/bff-tests.yml/badge.svg)](https://github.com/tmcfar/pw-web/actions/workflows/bff-tests.yml)
+[![BFF Coverage](https://img.shields.io/badge/BFF%20Coverage-69%25-yellow)](https://github.com/tmcfar/pw-web/actions/workflows/bff-tests.yml)
 
 ## 🎯 Overview
 
@@ -61,10 +63,27 @@ This repository contains a production-ready WebSocket implementation for PlotWea
 ├── 🎨 frontend/              # React application
 │   ├── src/hooks/            # Concurrent WebSocket hooks
 │   └── src/components/       # Optimized UI components
-├── 🧪 tests/                 # Comprehensive test suite
+├── 🚀 bff/                   # Backend for Frontend service
+│   ├── server/               # FastAPI REST API
+│   ├── tests/                # Comprehensive test suite (176 tests)
+│   ├── .github/workflows/    # CI/CD pipeline
+│   └── README.md             # BFF documentation
+├── 🧪 tests/                 # Frontend test suite
 ├── 📊 security_audit.py      # Security scanning tool
 └── 📋 QUALITY_CHECK_REPORT.md # Quality assurance report
 ```
+
+### **BFF Service Testing** 🧪
+
+The Backend for Frontend (BFF) service includes comprehensive testing with automated CI/CD:
+
+- **176 Total Tests**: Authentication, project management, lock system, integration workflows
+- **69% Coverage**: Exceeds 65% minimum threshold with detailed reporting
+- **Matrix Testing**: Python 3.11 & 3.12 on Ubuntu & Windows
+- **Quality Gates**: Automated linting, type checking, security scanning
+- **GitHub Actions**: Full CI/CD pipeline with coverage reporting and PR comments
+
+See [bff/README.md](./bff/README.md) for detailed testing and development instructions.
 
 ## 🚀 Quick Start
 

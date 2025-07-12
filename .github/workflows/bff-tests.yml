@@ -1,0 +1,380 @@
+name: BFF Test Suite
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'bff/**'
+      - '.github/workflows/bff-tests.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'bff/**'
+      - '.github/workflows/bff-tests.yml'
+  workflow_dispatch:
+    inputs:
+      coverage_threshold:
+        description: 'Minimum coverage percentage required'
+        required: false
+        default: '65'
+        type: string
+
+env:
+  # Test environment variables
+  JWT_SECRET: test-secret-key-for-ci
+  PYTHONPATH: /home/runner/work/pw-web/pw-web/bff
+  COVERAGE_THRESHOLD: ${{ github.event.inputs.coverage_threshold || '65' }}
+
+jobs:
+  lint-and-type-check:
+    name: Code Quality (Lint & Type Check)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ./bff
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-lint-${{ hashFiles('**/requirements.txt', '**/requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-lint-
+          ${{ runner.os }}-pip-
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install ruff mypy
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+        
+    - name: Cache ruff cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ruff
+        key: ${{ runner.os }}-ruff-${{ hashFiles('**/pyproject.toml', '**/.ruff.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-ruff-
+          
+    - name: Cache mypy cache
+      uses: actions/cache@v3
+      with:
+        path: .mypy_cache
+        key: ${{ runner.os }}-mypy-${{ hashFiles('**/*.py') }}
+        restore-keys: |
+          ${{ runner.os }}-mypy-
+        
+    - name: Run ruff linting
+      run: |
+        echo "Running ruff linter..."
+        ruff check . --output-format=github
+        
+    - name: Run ruff formatting check
+      run: |
+        echo "Checking code formatting with ruff..."
+        ruff format --check .
+        
+    - name: Run mypy type checking
+      run: |
+        echo "Running mypy type checker..."
+        mypy . --ignore-missing-imports --no-strict-optional
+      continue-on-error: true  # Allow mypy to fail without breaking the workflow
+
+  test:
+    name: Test Suite
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11', '3.12']
+        
+    defaults:
+      run:
+        working-directory: ./bff
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/pip
+          ~\AppData\Local\pip\Cache
+        key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ hashFiles('**/requirements.txt', '**/requirements-dev.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-${{ matrix.python-version }}-
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov pytest-asyncio pytest-xdist freezegun
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+      shell: bash
+      
+    - name: Install additional test dependencies
+      run: |
+        pip install httpx starlette fastapi python-jose python-multipart
+        pip install pydantic uvicorn
+      shell: bash
+        
+    - name: Create test environment file
+      run: |
+        echo "JWT_SECRET=test-secret-key-for-ci" > .env.test
+        echo "ENVIRONMENT=test" >> .env.test
+        echo "DATABASE_URL=sqlite:///test.db" >> .env.test
+      shell: bash
+      
+    - name: Run health check tests
+      run: |
+        echo "Running health check tests..."
+        python -m pytest tests/test_health.py -v --tb=short
+      shell: bash
+      
+    - name: Run unit tests
+      run: |
+        echo "Running unit tests..."
+        python -m pytest tests/api/ -v --tb=short -m "not slow"
+      shell: bash
+      
+    - name: Run integration tests
+      run: |
+        echo "Running integration tests..."
+        python -m pytest tests/integration/ -v --tb=short
+      shell: bash
+      continue-on-error: true  # Allow integration tests to fail on Windows
+      
+    - name: Run full test suite with coverage (Ubuntu only)
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      run: |
+        echo "Running full test suite with coverage..."
+        python -m pytest tests/ \
+          --cov=server \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-report=term-missing \
+          --cov-fail-under=${{ env.COVERAGE_THRESHOLD }} \
+          --tb=short \
+          -v
+      shell: bash
+      
+    - name: Upload coverage reports
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-reports
+        path: |
+          bff/coverage.xml
+          bff/htmlcov/
+        retention-days: 30
+        
+    - name: Generate coverage badge
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12' && github.ref == 'refs/heads/main'
+      run: |
+        pip install coverage-badge
+        coverage-badge -o coverage-badge.svg
+      shell: bash
+      
+    - name: Upload coverage badge
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12' && github.ref == 'refs/heads/main'
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-badge
+        path: bff/coverage-badge.svg
+        retention-days: 90
+
+  coverage-comment:
+    name: Coverage Comment
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: ./bff
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Download coverage reports
+      uses: actions/download-artifact@v3
+      with:
+        name: coverage-reports
+        path: ./bff/
+        
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install coverage tools
+      run: |
+        pip install coverage
+        
+    - name: Parse coverage report
+      id: coverage
+      run: |
+        if [ -f coverage.xml ]; then
+          COVERAGE=$(python -c "
+        import xml.etree.ElementTree as ET
+        try:
+            tree = ET.parse('coverage.xml')
+            root = tree.getroot()
+            coverage = root.attrib['line-rate']
+            percentage = float(coverage) * 100
+            print(f'{percentage:.1f}')
+        except:
+            print('Unable to parse coverage')
+        ")
+          echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "Coverage: $COVERAGE%"
+        else
+          echo "percentage=Unknown" >> $GITHUB_OUTPUT
+        fi
+      shell: bash
+      
+    - name: Comment coverage on PR
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const coverage = '${{ steps.coverage.outputs.percentage }}';
+          const threshold = ${{ env.COVERAGE_THRESHOLD }};
+          const emoji = parseFloat(coverage) >= threshold ? '✅' : '❌';
+          const status = parseFloat(coverage) >= threshold ? 'PASSED' : 'FAILED';
+          
+          const comment = `## ${emoji} BFF Test Coverage Report
+          
+          **Coverage:** ${coverage}%
+          **Threshold:** ${threshold}%
+          **Status:** ${status}
+          
+          ### Test Results
+          - **Matrix Tests:** Python 3.11 & 3.12 on Ubuntu & Windows
+          - **Coverage Measured On:** Ubuntu + Python 3.12
+          
+          ### Files with Coverage Reports
+          - \`coverage.xml\` - Machine readable format
+          - \`htmlcov/\` - Human readable HTML report
+          
+          ${parseFloat(coverage) < threshold ? 
+            '⚠️ **Coverage is below the required threshold!**' : 
+            '🎉 **Coverage meets the required threshold!**'}
+          
+          <details>
+          <summary>View detailed coverage report</summary>
+          
+          Download the coverage artifacts from this workflow run to see detailed line-by-line coverage information.
+          
+          </details>`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ./bff
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install security scanning tools
+      run: |
+        pip install bandit safety
+        
+    - name: Run bandit security scan
+      run: |
+        echo "Running bandit security scan..."
+        bandit -r . -f json -o bandit-report.json || true
+        bandit -r . -f txt
+      continue-on-error: true
+      
+    - name: Run safety dependency scan
+      run: |
+        echo "Running safety dependency scan..."
+        if [ -f requirements.txt ]; then
+          safety check -r requirements.txt --json --output safety-report.json || true
+          safety check -r requirements.txt
+        fi
+      continue-on-error: true
+      
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      with:
+        name: security-reports
+        path: |
+          bff/bandit-report.json
+          bff/safety-report.json
+        retention-days: 30
+
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: ./bff
+        
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-benchmark
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        pip install httpx starlette fastapi python-jose
+        
+    - name: Run performance tests
+      run: |
+        echo "Running performance tests..."
+        python -m pytest tests/ -v -m "slow" --benchmark-only --benchmark-json=benchmark.json || true
+      continue-on-error: true
+      
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results
+        path: bff/benchmark.json
+        retention-days: 30

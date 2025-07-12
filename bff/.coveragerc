@@ -1,0 +1,92 @@
+[run]
+# Source files to measure coverage for
+source = server
+
+# Files to include in coverage measurement
+include = 
+    server/*
+    server/**/*
+
+# Files and directories to exclude from coverage
+omit = 
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */venv/*
+    */env/*
+    */.tox/*
+    */migrations/*
+    */conftest.py
+    server/__init__.py
+
+# Enable branch coverage
+branch = True
+
+# Fail if coverage falls below this percentage
+fail_under = 65
+
+# Show missing lines in terminal report
+show_missing = True
+
+# Skip lines with pragma comments
+skip_covered = False
+
+# Precision for coverage percentage
+precision = 1
+
+[report]
+# Formatting options for coverage reports
+show_missing = True
+precision = 1
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+    
+    # Don't complain about missing debug-only code
+    def __repr__
+    if self\.debug
+    
+    # Don't complain if tests don't hit defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+    
+    # Don't complain if non-runnable code isn't run
+    if 0:
+    if __name__ == .__main__.:
+    
+    # Don't complain about abstract methods
+    @(abc\.)?abstractmethod
+    
+    # Don't complain about TYPE_CHECKING imports
+    if TYPE_CHECKING:
+    
+    # Don't complain about platform specific code
+    if sys.platform
+    
+    # Don't complain about import fallbacks
+    except ImportError:
+
+# Sort the output by coverage percentage
+sort = Cover
+
+[html]
+# HTML report configuration
+directory = htmlcov
+title = BFF Test Coverage Report
+show_contexts = True
+
+[xml]
+# XML report configuration for CI/CD systems
+output = coverage.xml
+
+[json]
+# JSON report configuration
+output = coverage.json
+show_contexts = True
+
+[paths]
+# Path mappings for coverage combining
+source =
+    server/
+    /home/runner/work/pw-web/pw-web/bff/server/
+    C:\Users\runneradmin\work\pw-web\pw-web\bff\server\
