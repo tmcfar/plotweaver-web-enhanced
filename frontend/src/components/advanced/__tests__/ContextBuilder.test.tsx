@@ -120,20 +120,22 @@ describe('ContextBuilder', () => {
       clearNotifications: jest.fn(),
     })
 
-  })
-
-  describe('Component Display', () => {
+  })  describe('Component Display', () => {
     it('displays available components', () => {
       render(<ContextBuilder {...defaultProps} />)
 
+      // Check main UI sections are present
       expect(screen.getByText('Available Components')).toBeInTheDocument()
       expect(screen.getByText('Scene Context')).toBeInTheDocument()
       
-      // Check that available components are shown
-      expect(screen.getByText('John Doe')).toBeInTheDocument()
-      expect(screen.getByText('Police Station')).toBeInTheDocument()
-      expect(screen.getByText('Murder Mystery')).toBeInTheDocument()
-      expect(screen.getByText('Opening Scene')).toBeInTheDocument()
+      // Check search functionality is present
+      expect(screen.getByPlaceholderText('Search components...')).toBeInTheDocument()
+      
+      // Check that some components are displayed (allowing for duplicates)
+      expect(screen.getAllByText('John Doe')).toHaveLength(1)
+      expect(screen.getAllByText('Police Station')).toHaveLength(1)
+      expect(screen.getAllByText('Murder Mystery')).toHaveLength(1)
+      expect(screen.getAllByText('Opening Scene')).toHaveLength(1)
     })
 
     it('shows component descriptions', () => {
