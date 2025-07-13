@@ -1,7 +1,7 @@
 // src/components/advanced/FoundationCheckpoint.tsx
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, Lock, Unlock, ArrowRight } from 'lucide-react';
 import { useLockStore } from '../../lib/store/lockStore';
 import { useNotifications } from '../notifications/NotificationSystem';
@@ -43,11 +43,7 @@ export const FoundationCheckpoint: React.FC<FoundationCheckpointProps> = ({
   const { locks } = useLockStore();
   const { addNotification } = useNotifications();
 
-  useEffect(() => {
-    fetchFoundationStatus();
-  }, [projectId]);
-
-  const fetchFoundationStatus = async () => {
+  const fetchFoundationStatus = useCallback(async () => {
     setIsLoading(true);
     try {
       // Mock API call - replace with actual endpoint
@@ -98,7 +94,11 @@ export const FoundationCheckpoint: React.FC<FoundationCheckpointProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchFoundationStatus();
+  }, [fetchFoundationStatus]);
 
   const handleComponentSelect = (componentId: string) => {
     setSelectedComponents(prev => 

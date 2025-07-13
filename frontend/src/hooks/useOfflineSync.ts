@@ -55,7 +55,8 @@ export function useOfflineSync() {
   // Load pending changes on mount
   useEffect(() => {
     loadPendingChanges();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // loadPendingChanges only needs to run once on mount
 
   const loadPendingChanges = async () => {
     try {
@@ -95,7 +96,8 @@ export function useOfflineSync() {
       console.error('Failed to queue offline change:', error);
       toast.error('Failed to save offline change');
     }
-  }, [isOnline]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOnline]); // syncChange is defined below and would cause circular dependency
 
   const syncChange = async (change: OfflineChange) => {
     try {

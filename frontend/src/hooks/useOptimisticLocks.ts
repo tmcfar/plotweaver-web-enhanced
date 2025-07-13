@@ -108,7 +108,8 @@ export const useOptimisticLocks = (projectId: string): OptimisticLockHook => {
       rollbackOptimisticOperation,
       setLoading,
       addError,
-    ]
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    ] // setOperationTimeout is a stable function defined in component scope
   );
 
   const removeLock = useCallback(

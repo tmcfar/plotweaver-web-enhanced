@@ -90,12 +90,12 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
     } else {
       setValidation(null);
     }
-  }, [context]);
+  }, [context, validateContext]);
 
   // Generate AI suggestions based on current context
   useEffect(() => {
     generateSuggestions();
-  }, [context, sceneId]);
+  }, [context, sceneId, generateSuggestions]);
 
   const validateContext = useCallback(async () => {
     setIsValidating(true);
@@ -126,7 +126,7 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
     } catch (error) {
       console.error('Failed to generate suggestions:', error);
     }
-  }, [context]);
+  }, [context, availableComponents]);
 
   const addToContext = useCallback((component: ProjectComponent, reason: string = 'Manual addition') => {
     const newItem: ContextItem = {

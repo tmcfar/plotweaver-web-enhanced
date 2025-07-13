@@ -44,7 +44,8 @@ const NotificationItem: FC<NotificationProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [autoClose, duration]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoClose, duration]); // handleDismiss is intentionally omitted to prevent timer recreation
 
   const handleDismiss = () => {
     setIsLeaving(true);

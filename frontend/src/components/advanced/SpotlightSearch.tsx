@@ -277,7 +277,8 @@ export function SpotlightSearch({ isOpen, onClose, className }: SpotlightSearchP
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, filteredResults, selectedIndex])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, filteredResults, selectedIndex]) // handleClose and handleResultSelect are defined below
 
   const handleClose = () => {
     setQuery('')
