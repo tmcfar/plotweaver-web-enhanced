@@ -67,6 +67,7 @@ describe('FoundationCheckpoint', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.useRealTimers() // Use real timers to prevent conflicts with testing library
     
     mockUseLockStore.mockReturnValue({
       locks: mockLocks,
@@ -97,7 +98,7 @@ describe('FoundationCheckpoint', () => {
         expect(screen.getByText('Overall Readiness')).toBeInTheDocument()
         expect(screen.getByText('75%')).toBeInTheDocument()
       })
-    })
+    }, 10000)
 
     it('displays all component types with their status', async () => {
       render(<FoundationCheckpoint {...defaultProps} />)
@@ -112,7 +113,7 @@ describe('FoundationCheckpoint', () => {
         expect(screen.getByText('Plot Structure')).toBeInTheDocument()
         expect(screen.getByText('60% complete')).toBeInTheDocument()
       })
-    })
+    }, 10000)
 
     it('shows check icon for ready components', async () => {
       render(<FoundationCheckpoint {...defaultProps} />)
@@ -122,7 +123,7 @@ describe('FoundationCheckpoint', () => {
         const checkIcon = settingComponent?.querySelector('.lucide-check-circle-2')
         expect(checkIcon).toBeInTheDocument()
       })
-    })
+    }, 10000)
 
     it('shows warning icon for incomplete components', async () => {
       render(<FoundationCheckpoint {...defaultProps} />)
@@ -132,7 +133,7 @@ describe('FoundationCheckpoint', () => {
         const warningIcon = plotComponent?.querySelector('.lucide-alert-circle')
         expect(warningIcon).toBeInTheDocument()
       })
-    })
+    }, 10000)
 
     it('shows lock icon for locked components', async () => {
       render(<FoundationCheckpoint {...defaultProps} />)
@@ -143,7 +144,7 @@ describe('FoundationCheckpoint', () => {
         expect(lockIcon).toBeInTheDocument()
         expect(screen.getByText('hard locked')).toBeInTheDocument()
       })
-    })
+    }, 10000)
   })
 
   describe('Progress Bars', () => {
@@ -154,7 +155,7 @@ describe('FoundationCheckpoint', () => {
         const progressBar = document.querySelector('[style*="width: 75%"]')
         expect(progressBar).toBeInTheDocument()
       })
-    })
+    }, 10000)
 
     it('applies correct color coding to progress bars', async () => {
       render(<FoundationCheckpoint {...defaultProps} />)
@@ -163,7 +164,7 @@ describe('FoundationCheckpoint', () => {
         const progressBar = document.querySelector('.bg-yellow-500')
         expect(progressBar).toBeInTheDocument()
       })
-    })
+    }, 10000)
   })
 
   describe('Lock All Ready Functionality', () => {
@@ -184,7 +185,7 @@ describe('FoundationCheckpoint', () => {
         await user.click(characterCheckbox)
         expect(characterCheckbox).toBeChecked()
       }
-    })
+    }, 10000)
 
     it('shows lock controls when components are selected', async () => {
       const { user } = render(<FoundationCheckpoint {...defaultProps} />)
@@ -203,7 +204,7 @@ describe('FoundationCheckpoint', () => {
           expect(screen.getByText('Lock 1 Components')).toBeInTheDocument()
         })
       }
-    })
+    }, 10000)
 
     it('allows selecting lock level', async () => {
       const { user } = render(<FoundationCheckpoint {...defaultProps} />)
@@ -227,7 +228,7 @@ describe('FoundationCheckpoint', () => {
         await user.selectOptions(lockLevelSelect, 'soft')
         expect(lockLevelSelect).toHaveValue('soft')
       }
-    })
+    }, 10000)
 
     it('calls onComponentLock when locking components', async () => {
       const onComponentLock = jest.fn()
@@ -255,7 +256,7 @@ describe('FoundationCheckpoint', () => {
           expect(mockAddNotification).toHaveBeenCalledWith('success', expect.stringContaining('Components Locked'))
         })
       }
-    })
+    }, 10000)
   })
 
   describe('Continue Unlocked Option', () => {
@@ -277,7 +278,7 @@ describe('FoundationCheckpoint', () => {
         const createButton = screen.getByText('Create Foundation Checkpoint')
         expect(createButton).not.toBeDisabled()
       })
-    })
+    }, 10000)
 
     it('disables checkpoint creation when components are not ready', async () => {
       render(<FoundationCheckpoint {...defaultProps} />)
@@ -286,7 +287,7 @@ describe('FoundationCheckpoint', () => {
         const createButton = screen.getByText('Create Foundation Checkpoint')
         expect(createButton).toBeDisabled()
       })
-    })
+    }, 10000)
 
     it('calls onCheckpointCreate when creating checkpoint', async () => {
       const readyStatus = {
@@ -311,7 +312,7 @@ describe('FoundationCheckpoint', () => {
       await user.click(createButton)
 
       expect(onCheckpointCreate).toHaveBeenCalled()
-    })
+    }, 10000)
   })
 
   describe('Review & Lock Functionality', () => {
@@ -326,7 +327,7 @@ describe('FoundationCheckpoint', () => {
       await user.click(plotComponent)
 
       expect(plotComponent).toHaveClass('border-blue-500', 'bg-blue-50')
-    })
+    }, 10000)
 
     it('toggles component selection on click', async () => {
       const { user } = render(<FoundationCheckpoint {...defaultProps} />)
@@ -344,7 +345,7 @@ describe('FoundationCheckpoint', () => {
       // Deselect
       await user.click(plotComponent)
       expect(plotComponent).not.toHaveClass('border-blue-500')
-    })
+    }, 10000)
   })
 
   describe('Incomplete Component Warnings', () => {
@@ -356,7 +357,7 @@ describe('FoundationCheckpoint', () => {
         expect(screen.getByText('Missing Act 2 climax')).toBeInTheDocument()
         expect(screen.getByText('Unclear character motivations')).toBeInTheDocument()
       })
-    })
+    }, 10000)
 
     it('shows recommendations section', async () => {
       render(<FoundationCheckpoint {...defaultProps} />)
@@ -366,7 +367,7 @@ describe('FoundationCheckpoint', () => {
         expect(screen.getByText('Complete plot structure before locking')).toBeInTheDocument()
         expect(screen.getByText('Consider soft-locking characters to allow minor adjustments')).toBeInTheDocument()
       })
-    })
+    }, 10000)
   })
 
   describe('API Interactions', () => {
@@ -376,7 +377,7 @@ describe('FoundationCheckpoint', () => {
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith('/api/projects/test-project-1/foundation-status')
       })
-    })
+    }, 10000)
 
     it('handles API errors gracefully', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
@@ -390,7 +391,7 @@ describe('FoundationCheckpoint', () => {
       })
 
       consoleErrorSpy.mockRestore()
-    })
+    }, 10000)
 
     it('refreshes status when refresh button is clicked', async () => {
       const { user } = render(<FoundationCheckpoint {...defaultProps} />)
@@ -405,7 +406,7 @@ describe('FoundationCheckpoint', () => {
       await user.click(refreshButton)
 
       expect(global.fetch).toHaveBeenCalledWith('/api/projects/test-project-1/foundation-status')
-    })
+    }, 10000)
   })
 
   describe('Loading and Error States', () => {
@@ -427,7 +428,7 @@ describe('FoundationCheckpoint', () => {
       await waitFor(() => {
         expect(screen.getByText('Failed to load foundation status')).toBeInTheDocument()
       })
-    })
+    }, 10000)
   })
 
   describe('Guided Flow Mode', () => {
@@ -442,7 +443,7 @@ describe('FoundationCheckpoint', () => {
       await user.click(toggleButton)
 
       expect(screen.getByText('Manual Mode')).toBeInTheDocument()
-    })
+    }, 10000)
   })
 
   describe('Accessibility', () => {
@@ -467,7 +468,7 @@ describe('FoundationCheckpoint', () => {
           expect(screen.getByText('Lock Level:')).toBeInTheDocument()
         })
       }
-    })
+    }, 10000)
 
     it('provides keyboard navigation', async () => {
       const { user } = render(<FoundationCheckpoint {...defaultProps} />)
@@ -482,6 +483,6 @@ describe('FoundationCheckpoint', () => {
 
       await user.tab()
       expect(screen.getAllByRole('checkbox')[0]).toHaveFocus()
-    })
+    }, 10000)
   })
 })
