@@ -37,11 +37,16 @@ const customJestConfig = {
   ],
   coverageThreshold: {
     global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0,
+      branches: 60,
+      functions: 65,
+      lines: 70,
+      statements: 70,
     },
+  },
+  // Configure fake timers globally to prevent timing conflicts
+  fakeTimers: {
+    enableGlobally: true,
+    advanceTimers: true,
   },
   watchPlugins: [
     'jest-watch-typeahead/filename',
