@@ -286,7 +286,7 @@ export function LockManager({
           <div className="space-y-3">
             {filteredLocks.map((lock) => {
               const typeConfig = lockTypeConfig[lock.type]
-              const severityConfig = severityConfig[lock.severity]
+              const lockSeverityConfig = severityConfig[lock.severity]
               const TypeIcon = typeConfig.icon
 
               return (
@@ -312,8 +312,8 @@ export function LockManager({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-medium text-sm truncate">{lock.title}</h4>
-                        <Badge variant="outline" className={cn('text-xs', severityConfig.color, severityConfig.bgColor)}>
-                          {severityConfig.label}
+                        <Badge variant="outline" className={cn('text-xs', lockSeverityConfig.color, lockSeverityConfig.bgColor)}>
+                          {lockSeverityConfig.label}
                         </Badge>
                         {!lock.isVisible && (
                           <Badge variant="outline" className="text-xs">

@@ -329,10 +329,10 @@ export function ContinuityPanel({
                 <div className="space-y-3">
                   {filteredIssues.map(issue => {
                     const typeConfig = issueTypeConfig[issue.type]
-                    const severityConfig = severityConfig[issue.severity]
-                    const statusConfig = statusConfig[issue.status]
+                    const issueSeverityConfig = severityConfig[issue.severity]
+                    const issueStatusConfig = statusConfig[issue.status]
                     const TypeIcon = typeConfig.icon
-                    const StatusIcon = statusConfig.icon
+                    const StatusIcon = issueStatusConfig.icon
 
                     return (
                       <div
@@ -347,14 +347,14 @@ export function ContinuityPanel({
                         <div className="flex items-start gap-3">
                           <div className="flex items-center gap-2 mt-1">
                             <TypeIcon className={cn('h-4 w-4', typeConfig.color)} />
-                            <StatusIcon className={cn('h-4 w-4', statusConfig.color)} />
+                            <StatusIcon className={cn('h-4 w-4', issueStatusConfig.color)} />
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="font-medium text-sm truncate">{issue.title}</h4>
-                              <Badge variant="outline" className={cn('text-xs', severityConfig.color, severityConfig.bgColor)}>
-                                {severityConfig.label}
+                              <Badge variant="outline" className={cn('text-xs', issueSeverityConfig.color, issueSeverityConfig.bgColor)}>
+                                {issueSeverityConfig.label}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
                                 Impact: {issue.impact}/10

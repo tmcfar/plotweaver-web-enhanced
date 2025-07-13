@@ -383,8 +383,8 @@ export function Editor({ projectId, className }: EditorProps) {
               <ScrollArea className="flex-1">
                 <div className="space-y-3">
                   {filteredAnnotations.map((annotation) => {
-                    const statusConfig = statusConfig[annotation.status]
-                    const priorityConfig = priorityConfig[annotation.priority]
+                    const annotationStatusConfig = statusConfig[annotation.status]
+                    const annotationPriorityConfig = priorityConfig[annotation.priority]
 
                     return (
                       <Card key={annotation.id} className="border-l-4 border-l-primary/20">
@@ -393,15 +393,15 @@ export function Editor({ projectId, className }: EditorProps) {
                             <div className="flex items-center gap-2">
                               <Badge 
                                 variant="outline" 
-                                className={cn('text-xs', statusConfig.color, statusConfig.bgColor)}
+                                className={cn('text-xs', annotationStatusConfig.color, annotationStatusConfig.bgColor)}
                               >
-                                {statusConfig.label}
+                                {annotationStatusConfig.label}
                               </Badge>
                               <Badge 
                                 variant="outline" 
-                                className={cn('text-xs', priorityConfig.color)}
+                                className={cn('text-xs', annotationPriorityConfig.color)}
                               >
-                                {priorityConfig.label}
+                                {annotationPriorityConfig.label}
                               </Badge>
                             </div>
                             <span className="text-xs text-muted-foreground">
@@ -496,7 +496,7 @@ export function Editor({ projectId, className }: EditorProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {chapters.map((chapter) => {
                   const StatusIcon = chapterStatusConfig[chapter.status].icon
-                  const statusConfig = chapterStatusConfig[chapter.status]
+                  const chapterStatus = chapterStatusConfig[chapter.status]
 
                   return (
                     <Card key={chapter.id}>
@@ -504,9 +504,9 @@ export function Editor({ projectId, className }: EditorProps) {
                         <div className="flex items-center justify-between mb-3">
                           <h3 className="font-medium">{chapter.title}</h3>
                           <div className="flex items-center gap-1">
-                            <StatusIcon className={cn('h-4 w-4', statusConfig.color)} />
+                            <StatusIcon className={cn('h-4 w-4', chapterStatus.color)} />
                             <Badge variant="outline" className="text-xs">
-                              {statusConfig.label}
+                              {chapterStatus.label}
                             </Badge>
                           </div>
                         </div>
