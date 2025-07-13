@@ -12,12 +12,15 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:ci": "jest --ci --coverage --maxWorkers=2",
+    "test:stable": "jest --ci --maxWorkers=2 --testPathIgnorePatterns=\"__tests__/performance/.*\\.perf\\.test\\.tsx\" --testPathIgnorePatterns=\"__tests__/locks/lock-enforcement\\.test\\.tsx\" --testPathIgnorePatterns=\"e2e/.*\\.spec\\.ts\" --testPathIgnorePatterns=\"src/components/advanced/__tests__/FoundationCheckpoint\\.test\\.tsx\" --testPathIgnorePatterns=\"src/components/advanced/__tests__/PreGenerationQueue\\.test\\.tsx\"",
+    "test:failing": "jest --ci --maxWorkers=1 --testNamePattern=\"(performance|lock-enforcement|e2e|FoundationCheckpoint|PreGenerationQueue)\"",
     "generate:api": "orval",
     "lint:api": "spectral lint ../../../pw-docs/health-assessment/reports/api-specs/*.json --ruleset ../../../pw-docs/health-assessment/config/spectral.yml",
     "dev:profile": "NEXT_PUBLIC_ENABLE_PROFILER=true next dev",
     "analyze:bundle": "ANALYZE=true npm run build",
     "profile:build": "npm run build && npm run analyze:bundle",
-    "analyze:performance": "node src/scripts/analyze-performance.js"
+    "analyze:performance": "node src/scripts/analyze-performance.js",
+    "analyze:test-failures": "node scripts/analyze-test-failures.js"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.7.1",
