@@ -235,12 +235,26 @@ const GitHubTab: React.FC<{ profile: UserProfile; onUpdate: () => void }> = ({ p
     }
   };
 
-  const handleGitHubConnect = () => {
-    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/auth/github/callback`;
-    const scope = 'repo,admin:repo_hook,read:user';
-    
-    window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}`;
+  const handleGitHubConnect = async () => {
+    try {
+      const redirectUri = process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT || `${window.location.origin}/auth/github/callback`;
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+      
+      const response = await fetch(`${backendUrl}/api/v1/auth/oauth/github/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get authorization URL');
+      }
+
+      const data = await response.json();
+      window.location.href = data.authorization_url;
+    } catch (error) {
+      console.error('GitHub connect failed:', error);
+      toast.error('Failed to start GitHub connection');
+    }
   };
 
   const handleDisconnect = async () => {
