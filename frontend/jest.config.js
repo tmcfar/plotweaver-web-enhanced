@@ -9,24 +9,14 @@ const createJestConfig = nextJest({
 const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
-  preset: 'ts-jest',
   moduleNameMapper: {
     // Handle module aliases (this will be automatically configured for you soon)
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   moduleDirectories: ['node_modules', '<rootDir>/'],
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
-  transform: {
-    // Use ts-jest for TypeScript files
-    '^.+\\.(ts|tsx)?$': [
-      'ts-jest',
-      {
-        tsconfig: {
-          jsx: 'react-jsx',
-        },
-      },
-    ],
-  },
+  // Let Next.js handle transforms instead of ts-jest to avoid conflicts
+  extensionsToTreatAsEsm: [],
   coverageProvider: 'v8',
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
@@ -43,10 +33,9 @@ const customJestConfig = {
       statements: 70,
     },
   },
-  // Configure fake timers globally to prevent timing conflicts
+  // Disable global fake timers to prevent conflicts with individual test control
   fakeTimers: {
-    enableGlobally: true,
-    advanceTimers: true,
+    enableGlobally: false,
   },
   watchPlugins: [
     'jest-watch-typeahead/filename',

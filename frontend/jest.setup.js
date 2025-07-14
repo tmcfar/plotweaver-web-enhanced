@@ -84,15 +84,34 @@ afterAll(() => {
   console.error = originalError
 })
 
-// Mock browser timer functions as spies
-global.setInterval = jest.fn(setInterval)
-global.clearInterval = jest.fn(clearInterval)
-global.setTimeout = jest.fn(setTimeout)
-global.clearTimeout = jest.fn(clearTimeout)
+// Mock WebSocket to prevent connection attempts during tests
+global.WebSocket = jest.fn().mockImplementation(() => ({
+  close: jest.fn(),
+  send: jest.fn(),
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  readyState: 1, // OPEN
+  CONNECTING: 0,
+  OPEN: 1,
+  CLOSING: 2,
+  CLOSED: 3,
+}))
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn(),
+}
+global.localStorage = localStorageMock
+global.sessionStorage = localStorageMock
 
 // Clean up after each test
 afterEach(() => {
   jest.clearAllMocks()
+  jest.clearAllTimers()
+  jest.useRealTimers()
 })
 
 // Mock requestAnimationFrame
