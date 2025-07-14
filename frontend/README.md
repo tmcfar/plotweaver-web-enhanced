@@ -6,7 +6,7 @@ A modern, AI-powered novel writing platform built with Next.js 14, TypeScript, a
 
 - **Modern Architecture**: Next.js 14 with App Router and TypeScript
 - **Design System**: Comprehensive design tokens with light/dark themes
-- **Authentication**: Clerk integration with protected routes
+- **Authentication**: GitHub OAuth integration with backend API
 - **UI Components**: shadcn/ui component library with custom variants
 - **Responsive Design**: Mobile-first responsive design
 - **Performance**: Optimized build with code splitting
@@ -18,7 +18,7 @@ A modern, AI-powered novel writing platform built with Next.js 14, TypeScript, a
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS with CSS variables
 - **Components**: Radix UI primitives with shadcn/ui
-- **Authentication**: Clerk
+- **Authentication**: GitHub OAuth
 - **State Management**: Zustand (existing)
 - **Icons**: Lucide React + custom icons
 - **Deployment**: Vercel-ready
@@ -155,14 +155,46 @@ const buttonVariants = cva(baseClasses, {
 Copy `.env.local.example` to `.env.local` and configure:
 
 ```env
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
-CLERK_SECRET_KEY=sk_...
+# API Configuration
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_BACKEND_URL=http://localhost:5000
+NEXT_PUBLIC_BFF_URL=http://localhost:8000
+NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
 
-# API Configuration  
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_WS_URL=ws://localhost:8000
+# GitHub OAuth Configuration
+NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT=http://localhost:3000/github/callback
+
+# Feature Flags
+NEXT_PUBLIC_ENABLE_WORLDBUILDING=true
+NEXT_PUBLIC_ENABLE_GIT_INTEGRATION=true
+NEXT_PUBLIC_ENABLE_AUTH=false
+
+# Development Settings
+NEXT_PUBLIC_DEBUG=true
+NEXT_PUBLIC_LOG_LEVEL=debug
 ```
+
+## 🔐 GitHub OAuth Integration
+
+The frontend integrates with PlotWeaver's backend for GitHub OAuth authentication:
+
+### OAuth Flow
+1. **User clicks "Connect GitHub"** → Calls `/api/v1/auth/oauth/github/authorize`
+2. **Backend returns authorization URL** → Redirects to GitHub OAuth
+3. **GitHub redirects back** → `/github/callback?code=...&state=...`
+4. **Callback posts to backend** → `/api/v1/auth/oauth/github/callback`
+5. **Backend processes OAuth** → Returns access & refresh tokens
+6. **Tokens stored in localStorage** → User redirected to dashboard
+
+### Development Mode
+- OAuth is bypassed in development when `NODE_ENV=development`
+- Test the OAuth flow at `/dev/connection-test`
+- Mock user data used for development
+
+### OAuth Endpoints
+- **Profile Integration**: `/profile` → GitHub tab for connection management
+- **Callback Handler**: `/github/callback` → Processes OAuth return
+- **Connection Test**: `/dev/connection-test` → Tests all service endpoints
 
 ## 🧪 Testing
 
