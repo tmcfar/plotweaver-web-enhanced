@@ -116,3 +116,8 @@ session_config_example.py
 make_*_executable.sh
 commit-*.sh
 fix-*.sh
+# Python virtual environments
+venv/
+.venv/
+env/
+.env/
