@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
-const REDIRECT_URI = process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT || 'http://localhost:3000/github/callback';
+const REDIRECT_URI = process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT || 'http://localhost:3000/(auth)/github/callback';
 
 export default function GitHubCallback() {
   const router = useRouter();

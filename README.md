@@ -88,30 +88,33 @@ See [bff/README.md](./bff/README.md) for detailed testing and development instru
 ## 🚀 Quick Start
 
 ### **Prerequisites**
-- Python 3.12+
-- Node.js 18+
-- FastAPI
-- React 19
+- Docker & Docker Compose
+- Node.js 18+ (for local development)
+- Python 3.12+ (for local development)
 
-### **Backend Setup**
+### **Fullstack Development**
 ```bash
-# Install dependencies
-pip install fastapi uvicorn websockets pydantic
-
-# Start the WebSocket server
-cd src/server
-python main.py
+# Use the backend's fullstack docker-compose setup
+cd /home/tmcfar/dev/pw2
+make up
 ```
 
-### **Frontend Setup**
+### **Local Component Development**
 ```bash
-# Install dependencies
+# Frontend development only
 cd frontend
 npm install
-
-# Start development server
 npm run dev
+
+# BFF development only
+cd bff
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python -m uvicorn server.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+> **Note**: For full application development, use the backend's integrated Docker environment at `/home/tmcfar/dev/pw2`. This repository's Docker commands have been disabled in favor of the centralized fullstack setup.
 
 ### **WebSocket Connection Example**
 ```typescript

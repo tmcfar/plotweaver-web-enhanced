@@ -237,8 +237,18 @@ const GitHubTab: React.FC<{ profile: UserProfile; onUpdate: () => void }> = ({ p
 
   const handleGitHubConnect = async () => {
     try {
-      const redirectUri = process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT || `${window.location.origin}/auth/github/callback`;
+      // Use environment variable if available, otherwise use the correct default
+      const redirectUri = process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT || `${window.location.origin}/(auth)/github/callback`;
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+      
+      // DEBUG: Log what we're about to send
+      console.log('=== OAuth Debug Info ===');
+      console.log('Redirect URI:', redirectUri);
+      console.log('Backend URL:', backendUrl);
+      console.log('Full request URL:', `${backendUrl}/api/v1/auth/oauth/github/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`);
+      console.log('Env var NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT:', process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT);
+      console.log('Window origin:', window.location.origin);
+      console.log('=======================');
       
       const response = await fetch(`${backendUrl}/api/v1/auth/oauth/github/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`, {
         method: 'GET',
@@ -343,6 +353,13 @@ export const UserProfilePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'general' | 'github'>('general');
 
   useEffect(() => {
+    // Debug: Validate environment variables on mount
+    console.log('=== Environment Variables Check ===');
+    console.log('NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT:', process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT);
+    console.log('NEXT_PUBLIC_BACKEND_URL:', process.env.NEXT_PUBLIC_BACKEND_URL);
+    console.log('NEXT_PUBLIC_API_URL:', process.env.NEXT_PUBLIC_API_URL);
+    console.log('==================================');
+    
     loadProfile();
   }, []);
 

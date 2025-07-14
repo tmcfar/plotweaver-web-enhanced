@@ -10,17 +10,20 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=development
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_WS_URL=ws://localhost:8000
+      - BFF_HOST=backend:8000
+      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_BFF_URL=http://backend:8000
+      - NEXT_PUBLIC_WS_URL=ws://backend:8000
+      - NEXT_PUBLIC_BACKEND_URL=http://backend:5000
       - NEXT_PUBLIC_ENV=development
+      - NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT=http://localhost:3000/(auth)/github/callback
     volumes:
       - ./frontend:/app
       - /app/node_modules
-      - /app/.next
     command: npm run dev
     restart: "no"
 
-  # Development overrides for backend
+  # Development overrides for backend (BFF service)
   backend:
     build:
       context: .

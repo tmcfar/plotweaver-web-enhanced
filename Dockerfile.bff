@@ -16,6 +16,8 @@ WORKDIR /app
 
 # Copy requirements
 COPY bff/requirements.txt .
+# Skip Playwright browser downloads to prevent timeout
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install additional dependencies for git operations

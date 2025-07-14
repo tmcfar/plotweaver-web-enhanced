@@ -31,6 +31,14 @@ npm install --legacy-peer-deps
 
 ## 🚀 Development
 
+### **Fullstack Development (Recommended)**
+```bash
+# Use the backend's integrated Docker environment
+cd /home/tmcfar/dev/pw2
+make up    # Start complete development environment
+```
+
+### **Frontend-Only Development**
 ```bash
 npm run dev     # Start development server
 npm run build   # Build for production
@@ -38,6 +46,8 @@ npm run start   # Start production server
 npm run lint    # Run ESLint
 npm run type-check # Run TypeScript compiler
 ```
+
+> **Note**: The frontend is integrated with the backend's fullstack Docker environment. For complete application development, use the backend's `make up` command rather than local Docker commands.
 
 ## 🎨 Design System
 

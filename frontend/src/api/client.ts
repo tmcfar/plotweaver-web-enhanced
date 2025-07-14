@@ -1,12 +1,17 @@
 import axios from 'axios';
 
+// BFF runs on port 8000
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001',
+  baseURL: process.env.NEXT_PUBLIC_BFF_URL || 'http://localhost:8000',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Auth routes that should not trigger redirects to prevent loops
+const AUTH_PATHS = ['/(auth)/', '/login', '/api/auth/'];
+const isAuthRoute = (pathname: string) => AUTH_PATHS.some(path => pathname.includes(path));
 
 // Request interceptor for auth
 apiClient.interceptors.request.use((config) => {
@@ -24,7 +29,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       // Handle unauthorized access
       localStorage.removeItem('auth_token');
-      window.location.href = '/login';
+      // Prevent infinite redirect loop - only redirect if not already in auth flow
+      if (!isAuthRoute(window.location.pathname)) {
+        console.trace('API client interceptor triggering redirect to /login');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

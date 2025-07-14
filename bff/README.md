@@ -24,8 +24,17 @@ Backend for Frontend service for the PlotWeaver web application, providing APIs 
 
 - Python 3.11 or higher
 - pip package manager
+- Docker & Docker Compose (for fullstack development)
 
-### Installation
+### Fullstack Development (Recommended)
+
+```bash
+# Use the backend's integrated Docker environment
+cd /home/tmcfar/dev/pw2
+make up    # Start complete development environment with BFF, Frontend, and Backend
+```
+
+### BFF-Only Local Development
 
 1. Clone the repository:
 ```bash

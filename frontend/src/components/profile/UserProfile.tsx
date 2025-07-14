@@ -311,7 +311,8 @@ const GitHubTab: React.FC<{ profile: UserProfile; onUpdate: () => void }> = ({ p
 
   const handleGitHubConnect = async () => {
     try {
-      const redirectUri = process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT || `${window.location.origin}/auth/github/callback`;
+      // Use environment variable if available, otherwise use the correct default
+      const redirectUri = process.env.NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT || `${window.location.origin}/(auth)/github/callback`;
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
       
       const response = await fetch(`${backendUrl}/api/v1/auth/oauth/github/authorize?redirect_uri=${encodeURIComponent(redirectUri)}`, {

@@ -17,7 +17,7 @@ export default function ConnectionTestPage() {
     { name: 'BFF Health', url: '/api/bff/api/health', status: 'checking' },
     { name: 'BFF Root Info', url: '/api/bff/', status: 'checking' },
     { name: 'Backend Health', url: '/api/backend/health', status: 'checking' },
-    { name: 'GitHub OAuth Authorize', url: 'http://localhost:5000/api/v1/auth/oauth/github/authorize?redirect_uri=http://localhost:3000/github/callback', status: 'checking' },
+    { name: 'GitHub OAuth Authorize', url: 'http://localhost:5000/api/v1/auth/oauth/github/authorize?redirect_uri=http://localhost:3000/(auth)/github/callback', status: 'checking' },
   ]);
 
   const testService = async (service: ServiceStatus): Promise<ServiceStatus> => {
