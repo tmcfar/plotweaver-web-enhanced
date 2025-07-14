@@ -18,8 +18,12 @@ services:
       - NEXT_PUBLIC_ENV=development
       - NEXT_PUBLIC_GITHUB_OAUTH_REDIRECT=http://localhost:3000/(auth)/github/callback
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      - ./frontend:/app:ro  # Read-only mount for most files
+      - ./frontend/src:/app/src:rw  # Read-write for source code
+      - ./frontend/app:/app/app:rw  # Read-write for Next.js app directory
+      - ./frontend/public:/app/public:rw  # Read-write for public assets
+      - frontend-next:/app/.next  # Named volume for .next build cache
+      - /app/node_modules  # Anonymous volume for node_modules
     command: npm run dev
     restart: "no"
 
@@ -45,4 +49,6 @@ services:
 
 volumes:
   backend-dev-data:
+    driver: local
+  frontend-next:
     driver: local
