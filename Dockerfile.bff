@@ -7,6 +7,10 @@ RUN apt-get update && apt-get install -y \
     openssh-client \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for security
+RUN groupadd --system --gid 1001 plotweaver && \
+    useradd --system --uid 1001 --gid plotweaver --shell /bin/bash plotweaver
+
 # Set working directory
 WORKDIR /app
 
@@ -26,8 +30,12 @@ ENV PYTHONPATH=/app:/app/bff
 ENV GIT_REPO_PATH=/opt/plotweaver/bff-repo
 ENV ENVIRONMENT=development
 
-# Create directory for git repository
-RUN mkdir -p /opt/plotweaver/bff-repo
+# Create directory for git repository and set ownership
+RUN mkdir -p /opt/plotweaver/bff-repo && \
+    chown -R plotweaver:plotweaver /opt/plotweaver /app
+
+# Switch to non-root user
+USER plotweaver
 
 # Expose FastAPI port
 EXPOSE 8000
@@ -39,15 +47,19 @@ CMD ["uvicorn", "bff.server.main:app", "--host", "0.0.0.0", "--port", "8000", "-
 FROM base AS production
 WORKDIR /app
 
-# Copy application code
-COPY . .
+# Copy application code with proper ownership
+COPY --chown=plotweaver:plotweaver . .
 
-# Create directory for git repository
-RUN mkdir -p /opt/plotweaver/bff-repo
+# Create directory for git repository and set ownership
+RUN mkdir -p /opt/plotweaver/bff-repo && \
+    chown -R plotweaver:plotweaver /opt/plotweaver /app
 
 # Set environment variables
 ENV PYTHONPATH=/app:/app/bff
 ENV GIT_REPO_PATH=/opt/plotweaver/bff-repo
+
+# Switch to non-root user
+USER plotweaver
 
 # Expose FastAPI port
 EXPOSE 8000

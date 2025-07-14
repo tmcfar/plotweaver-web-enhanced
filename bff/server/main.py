@@ -419,7 +419,7 @@ class PreviewUpdate(BaseModel):
 @app.get("/")
 async def root() -> dict[str, Any]:
     return {
-        "message": "PlotWeaver Web API Enhanced",
+        "message": "PlotWeaver Web API",
         "version": "2.0.0",
         "features": ["enhanced-websockets", "optimistic-locks", "conflict-resolution"],
         "active_connections": len(manager.active_connections),
@@ -430,7 +430,7 @@ async def root() -> dict[str, Any]:
 async def enhanced_health_check() -> dict[str, Any]:
     return {
         "status": "healthy",
-        "service": "plotweaver-web-enhanced",
+        "service": "plotweaver-bff",
         "websocket_connections": len(manager.active_connections),
         "total_locks": sum(len(locks) for locks in project_locks.values()),
         "total_conflicts": sum(

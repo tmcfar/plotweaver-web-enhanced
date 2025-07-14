@@ -47,7 +47,7 @@ def test_root_endpoint_response_structure(test_client: TestClient) -> None:
     
     # Verify field types and values
     assert isinstance(data["message"], str)
-    assert data["message"] == "PlotWeaver Web API Enhanced"
+    assert data["message"] == "PlotWeaver Web API"
     assert isinstance(data["version"], str)
     assert data["version"] == "2.0.0"
     assert isinstance(data["features"], list)
@@ -113,7 +113,7 @@ def test_health_endpoint_response_structure(test_client: TestClient) -> None:
     assert isinstance(data["status"], str)
     assert data["status"] == "healthy"
     assert isinstance(data["service"], str)
-    assert data["service"] == "plotweaver-web-enhanced"
+    assert data["service"] == "plotweaver-bff"
     assert isinstance(data["websocket_connections"], int)
     assert isinstance(data["total_locks"], int)
     assert isinstance(data["total_conflicts"], int)

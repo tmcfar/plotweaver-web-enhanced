@@ -91,7 +91,7 @@ except ImportError:
     async def root():
         """Mock root endpoint for testing."""
         return {
-            "message": "PlotWeaver Web API Enhanced",
+            "message": "PlotWeaver Web API",
             "version": "2.0.0",
             "features": [
                 "enhanced-websockets",
@@ -106,7 +106,7 @@ except ImportError:
         """Mock health endpoint for testing."""
         return {
             "status": "healthy",
-            "service": "plotweaver-web-enhanced",
+            "service": "plotweaver-bff",
             "websocket_connections": 0,
             "total_locks": 0,
             "total_conflicts": 0,
