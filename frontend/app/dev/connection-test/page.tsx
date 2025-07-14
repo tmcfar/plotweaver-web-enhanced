@@ -13,11 +13,25 @@ interface ServiceStatus {
 
 export default function ConnectionTestPage() {
   const [services, setServices] = useState<ServiceStatus[]>([
+    // Core Services
     { name: 'Frontend Health', url: '/api/health', status: 'checking' },
     { name: 'BFF Health', url: '/api/bff/api/health', status: 'checking' },
-    { name: 'BFF Root Info', url: '/api/bff/', status: 'checking' },
-    { name: 'Backend Health', url: '/api/backend/health', status: 'checking' },
-    { name: 'GitHub OAuth Authorize', url: 'http://localhost:5000/api/v1/auth/oauth/github/authorize?redirect_uri=http://localhost:3000/(auth)/github/callback', status: 'checking' },
+    { name: 'Backend Health', url: '/api/backend/api/health', status: 'checking' },
+    
+    // Backend API Endpoints
+    { name: 'Projects API', url: '/api/backend/api/v1/projects', status: 'checking' },
+    { name: 'Auth Status', url: '/api/backend/api/v1/auth/me', status: 'checking' },
+    
+    // BFF Endpoints
+    { name: 'BFF Git Status', url: '/api/bff/api/git/status', status: 'checking' },
+    { name: 'BFF WebSocket Info', url: '/api/bff/ws/info', status: 'checking' },
+    
+    // Authentication
+    { name: 'GitHub OAuth', url: '/api/backend/api/v1/auth/oauth/github/authorize?redirect_uri=http://localhost:3000/(auth)/github/callback', status: 'checking' },
+    
+    // Database & Cache (via backend)
+    { name: 'Database Status', url: '/api/backend/api/v1/system/database/status', status: 'checking' },
+    { name: 'Redis Status', url: '/api/backend/api/v1/system/redis/status', status: 'checking' },
   ]);
 
   const testService = async (service: ServiceStatus): Promise<ServiceStatus> => {
@@ -35,7 +49,7 @@ export default function ConnectionTestPage() {
       const responseTime = Date.now() - startTime;
       console.log(`${service.name} response:`, response.status, response.statusText);
       
-      if (response.ok) {
+      if (response.ok || response.status === 401 || response.status === 403) {
         const data = await response.json();
         console.log(`${service.name} data:`, data);
         return {
@@ -69,15 +83,26 @@ export default function ConnectionTestPage() {
   const runTests = async () => {
     setServices(prev => prev.map(s => ({ ...s, status: 'checking' as const })));
     
-    const promises = services.map(service => testService(service));
-    const results = await Promise.all(promises);
-    
-    setServices(results);
+    // Test services in sequence to avoid overwhelming the system
+    const results: ServiceStatus[] = [];
+    for (const service of services) {
+      const result = await testService(service);
+      results.push(result);
+      // Update incrementally for better UX
+      setServices(prev => {
+        const newServices = [...prev];
+        const index = prev.findIndex(s => s.name === service.name);
+        if (index !== -1) {
+          newServices[index] = result;
+        }
+        return newServices;
+      });
+    }
   };
 
   useEffect(() => {
     runTests();
-  }, [runTests]);
+  }, []); // Only run on mount
 
   const getStatusColor = (status: ServiceStatus['status']) => {
     switch (status) {
@@ -117,6 +142,26 @@ export default function ConnectionTestPage() {
         >
           Refresh Tests
         </button>
+      </div>
+
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">Service Health Summary</h2>
+          <div className="flex space-x-4 text-sm">
+            <span className="flex items-center">
+              <span className="w-3 h-3 bg-green-500 rounded-full mr-1"></span>
+              Healthy: {services.filter(s => s.status === 'healthy').length}
+            </span>
+            <span className="flex items-center">
+              <span className="w-3 h-3 bg-yellow-500 rounded-full mr-1"></span>
+              Unhealthy: {services.filter(s => s.status === 'unhealthy').length}
+            </span>
+            <span className="flex items-center">
+              <span className="w-3 h-3 bg-red-500 rounded-full mr-1"></span>
+              Error: {services.filter(s => s.status === 'error').length}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -181,7 +226,13 @@ export default function ConnectionTestPage() {
             <strong>Backend Health:</strong> Tests main backend service via Next.js proxy (/api/backend/*). Requires backend running on localhost:5000.
           </div>
           <div>
+            <strong>Auth Status:</strong> Tests authentication endpoint. Should return error for missing auth (endpoint working) or user info if authenticated.
+          </div>
+          <div>
             <strong>GitHub OAuth:</strong> Tests authentication provider endpoints. May fail if authentication is disabled in development.
+          </div>
+          <div>
+            <strong>Database/Redis Status:</strong> These endpoints may not exist yet and need to be implemented in the backend.
           </div>
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
             <strong>CORS Note:</strong> All external service calls are proxied through Next.js rewrites in next.config.mjs to avoid CORS issues.
