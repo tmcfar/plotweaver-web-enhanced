@@ -2,7 +2,7 @@
 
 [![BFF Tests](https://github.com/your-org/pw-web/actions/workflows/bff-tests.yml/badge.svg)](https://github.com/your-org/pw-web/actions/workflows/bff-tests.yml)
 [![Coverage](https://img.shields.io/badge/coverage-69%25-yellow)](https://github.com/your-org/pw-web/actions/workflows/bff-tests.yml)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)](https://www.python.org/downloads/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/framework-FastAPI-009688)](https://fastapi.tiangolo.com/)
 
 Backend for Frontend service for the PlotWeaver web application, providing APIs for real-time collaboration, project management, git integration, and worldbuilding assistance.
@@ -22,7 +22,7 @@ Backend for Frontend service for the PlotWeaver web application, providing APIs 
 
 ### Prerequisites
 
-- Python 3.11 or higher
+- Python 3.12 or higher
 - pip package manager
 - Docker & Docker Compose (for fullstack development)
 
@@ -176,7 +176,7 @@ The project includes comprehensive GitHub Actions workflows:
 
 **Jobs:**
 1. **Code Quality**: Linting (ruff) and type checking (mypy)
-2. **Test Matrix**: Python 3.11 & 3.12 on Ubuntu & Windows
+2. **Test Matrix**: Python 3.12 on Ubuntu & Windows
 3. **Coverage Reporting**: Generate coverage reports and badges
 4. **Security Scanning**: bandit and safety checks
 5. **Performance Testing**: Benchmark tests for critical paths
@@ -317,7 +317,7 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 **Current Test Metrics:**
 - ✅ **176 Total Tests** (147 passing, 29 failing due to missing routes)
 - ✅ **69% Server Coverage** (target: 65%+)
-- ✅ **Matrix Testing** on Python 3.11 & 3.12, Ubuntu & Windows
+- ✅ **Matrix Testing** on Python 3.12, Ubuntu & Windows
 - ✅ **Automated Quality Checks** (linting, type checking, security scanning)
 
 **Test Categories:**

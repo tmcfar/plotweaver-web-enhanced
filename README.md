@@ -1,4 +1,4 @@
-# PlotWeaver Web Enhanced 🚀
+# PlotWeaver Frontend 🚀
 
 **Enterprise-grade WebSocket implementation with comprehensive security and performance optimizations**
 
@@ -52,7 +52,7 @@ This repository contains a production-ready WebSocket implementation for PlotWea
 ## 🏗️ Architecture
 
 ```
-📁 PlotWeaver Web Enhanced
+📁 PlotWeaver Frontend
 ├── 🔒 src/auth/              # Authentication & security
 │   ├── jwt_auth.py           # JWT token management
 │   └── rate_limiter.py       # Rate limiting implementation
@@ -79,7 +79,7 @@ The Backend for Frontend (BFF) service includes comprehensive testing with autom
 
 - **176 Total Tests**: Authentication, project management, lock system, integration workflows
 - **69% Coverage**: Exceeds 65% minimum threshold with detailed reporting
-- **Matrix Testing**: Python 3.11 & 3.12 on Ubuntu & Windows
+- **Matrix Testing**: Python 3.12+ on Ubuntu & Windows
 - **Quality Gates**: Automated linting, type checking, security scanning
 - **GitHub Actions**: Full CI/CD pipeline with coverage reporting and PR comments
 
