@@ -3,7 +3,7 @@ export async function GET() {
     // Check BFF health (port 8000)
     // Try Docker service name first, fallback to localhost
     const urls = [
-      'http://backend:8000/api/health',           // Docker service name
+      'http://bff:8000/api/health',               // Docker service name
       'http://localhost:8000/api/health'          // Local development
     ];
     
