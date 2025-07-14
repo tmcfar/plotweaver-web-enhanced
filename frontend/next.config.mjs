@@ -88,7 +88,17 @@ const nextConfig = {
 
   async rewrites() {
     return [
-      // Proxy API calls to FastAPI backend
+      // Proxy API calls to FastAPI BFF service
+      {
+        source: '/api/bff/:path*',
+        destination: 'http://localhost:8000/:path*',
+      },
+      // Proxy API calls to main backend service
+      {
+        source: '/api/backend/:path*',
+        destination: 'http://localhost:5000/api/:path*',
+      },
+      // Existing proxies for specific endpoints
       {
         source: '/api/preview/:path*',
         destination: 'http://localhost:8000/api/preview/:path*',
