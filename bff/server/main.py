@@ -14,9 +14,9 @@ from fastapi import (
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from bff.preview.sanitizer import sanitize_html
-from bff.auth.jwt_auth import websocket_auth_manager
-from bff.auth.rate_limiter import rate_limiter
+from preview.sanitizer import sanitize_html
+from auth.jwt_auth import websocket_auth_manager
+from auth.rate_limiter import rate_limiter
 from .constants import MAX_CONNECTIONS, MAX_MESSAGE_SIZE, HEARTBEAT_TIMEOUT
 from .bounded_collections import BoundedDict, BoundedSet
 from .worldbuilding_endpoints import router as worldbuilding_router
@@ -24,6 +24,7 @@ from .feedback_endpoints import router as feedback_router
 from .git_endpoints import router as git_read_router
 from .write_proxy import router as write_proxy_router
 from .story_proxy import router as story_proxy_router
+from .project_proxy import router as project_proxy_router
 from server.git_manager import BFFGitManager
 
 app = FastAPI(
@@ -58,6 +59,7 @@ app.include_router(feedback_router)
 app.include_router(git_read_router, tags=["git-read"])
 app.include_router(write_proxy_router, prefix="/api", tags=["write-proxy"])
 app.include_router(story_proxy_router, prefix="/api/v1", tags=["story-proxy"])
+app.include_router(project_proxy_router, prefix="/api/v1", tags=["project-proxy"])
 
 app.add_middleware(
     CORSMiddleware,
