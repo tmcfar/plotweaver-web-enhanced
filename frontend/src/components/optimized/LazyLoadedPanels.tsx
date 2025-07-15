@@ -163,25 +163,25 @@ export function IntersectionLazy({
 // Code splitting for route-based components
 export const LazyRoutes = {
   Dashboard: lazy(() => 
-    import('@/app/(dashboard)/dashboard/page').catch(() => 
+    import('../../../app/(dashboard)/dashboard/page').catch(() => 
       import('@/components/fallbacks/RouteFallback')
     )
   ),
   Projects: lazy(() => 
-    import('@/app/(dashboard)/projects/page').catch(() => 
+    import('../../../app/(dashboard)/projects/page').catch(() => 
       import('@/components/fallbacks/RouteFallback')
     )
   ),
   ProjectEditor: lazy(() => 
-    import('@/app/(dashboard)/projects/[id]/page').catch(() => 
+    import('../../../app/(dashboard)/projects/[id]/page').catch(() => 
       import('@/components/fallbacks/RouteFallback')
     )
   ),
-  Settings: lazy(() => 
-    import('@/app/(dashboard)/settings/page').catch(() => 
-      import('@/components/fallbacks/RouteFallback')
-    )
-  )
+  // Settings: lazy(() => 
+  //   import('../../../app/(dashboard)/settings/page').catch(() => 
+  //     import('@/components/fallbacks/RouteFallback')
+  //   )
+  // )
 }
 
 // Panel-specific lazy loaded components
@@ -207,12 +207,12 @@ export const LazyPanels = {
     )
   ),
   LockManager: lazy(() => 
-    import('@/components/story-control/LockManager').catch(() => 
+    import('@/components/story-control/LockManager').then(m => ({ default: m.LockManager })).catch(() => 
       import('@/components/fallbacks/PanelFallback')
     )
   ),
   CollaborationPanel: lazy(() => 
-    import('@/components/collaboration/CollaboratorList').catch(() => 
+    import('@/components/collaboration/CollaboratorList').then(m => ({ default: m.CollaboratorList })).catch(() => 
       import('@/components/fallbacks/PanelFallback')
     )
   )

@@ -5,7 +5,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Play, Pause, X, ChevronUp, ChevronDown, Clock, CheckCircle, AlertCircle, Eye } from 'lucide-react';
 import { useNotifications } from '../notifications/NotificationSystem';
 
-interface QueuedScene {
+export interface QueuedScene {
   id: string;
   title: string;
   chapterId: string;
