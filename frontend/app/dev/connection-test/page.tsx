@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface ServiceStatus {
   name: string;
@@ -80,7 +80,7 @@ export default function ConnectionTestPage() {
     }
   };
 
-  const runTests = async () => {
+  const runTests = useCallback(async () => {
     setServices(prev => prev.map(s => ({ ...s, status: 'checking' as const })));
     
     // Test services in sequence to avoid overwhelming the system
@@ -98,11 +98,11 @@ export default function ConnectionTestPage() {
         return newServices;
       });
     }
-  };
+  }, [services]);
 
   useEffect(() => {
     runTests();
-  }, []); // Only run on mount
+  }, [runTests]); // Only run on mount
 
   const getStatusColor = (status: ServiceStatus['status']) => {
     switch (status) {

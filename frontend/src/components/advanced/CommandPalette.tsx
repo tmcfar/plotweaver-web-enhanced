@@ -297,6 +297,12 @@ export function CommandPalette({ isOpen, onClose, className }: CommandPalettePro
   }, [filteredCommands])
 
   // Handle keyboard navigation
+  const handleClose = useCallback(() => {
+    setQuery('')
+    setSelectedIndex(0)
+    onClose()
+  }, [onClose])
+
   useEffect(() => {
     if (!isOpen) return
 
@@ -330,13 +336,7 @@ export function CommandPalette({ isOpen, onClose, className }: CommandPalettePro
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, filteredCommands, selectedIndex])
-
-  const handleClose = useCallback(() => {
-    setQuery('')
-    setSelectedIndex(0)
-    onClose()
-  }, [onClose])
+  }, [isOpen, filteredCommands, selectedIndex, handleClose])
 
   const handleCommandSelect = (command: Command) => {
     command.action()

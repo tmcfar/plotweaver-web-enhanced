@@ -1,7 +1,7 @@
 // Project Secrets Manager Component
 // Manages API keys at the project level using GitHub repository secrets
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -31,16 +31,12 @@ export const ProjectSecretsManager: React.FC<ProjectSecretsProps> = ({ projectId
   const [anthropicKey, setAnthropicKey] = useState('');
   const [savingProvider, setSavingProvider] = useState<string | null>(null);
 
-  const apiClient = axios.create({
+  const apiClient = useMemo(() => axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
-  });
+  }), []);
 
-  useEffect(() => {
-    loadSecretsStatus();
-  }, [projectId]);
-
-  const loadSecretsStatus = async () => {
+  const loadSecretsStatus = useCallback(async () => {
     try {
       const response = await apiClient.get(`/api/v1/projects/${projectId}/secrets`);
       setSecrets(response.data.secrets);
@@ -50,7 +46,11 @@ export const ProjectSecretsManager: React.FC<ProjectSecretsProps> = ({ projectId
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, apiClient]);
+
+  useEffect(() => {
+    loadSecretsStatus();
+  }, [loadSecretsStatus]);
 
   const handleSetSecret = async (provider: 'openai' | 'anthropic', key: string) => {
     if (!key) {

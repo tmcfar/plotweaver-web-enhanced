@@ -412,7 +412,7 @@ const GitHubTab: React.FC<{ profile: UserProfile; onUpdate: () => void }> = ({ p
 };
 
 // 6. GitHub OAuth Callback Handler (src/pages/auth/github/callback.tsx)
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { UserProfileService } from '@/services/userProfile';
 
@@ -420,13 +420,7 @@ export default function GitHubCallback() {
   const router = useRouter();
   const { code } = router.query;
 
-  useEffect(() => {
-    if (code && typeof code === 'string') {
-      handleCallback(code);
-    }
-  }, [code]);
-
-  const handleCallback = async (code: string) => {
+  const handleCallback = useCallback(async (code: string) => {
     try {
       const service = new UserProfileService();
       await service.connectGitHub(code);
@@ -435,7 +429,13 @@ export default function GitHubCallback() {
       console.error('GitHub connection failed:', error);
       router.push('/profile?tab=github&error=connection_failed');
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    if (code && typeof code === 'string') {
+      handleCallback(code);
+    }
+  }, [code, handleCallback]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">
