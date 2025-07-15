@@ -49,7 +49,11 @@ describe('PreGenerationQueue', () => {
     
     mockUseNotifications.mockReturnValue({
       addNotification: mockAddNotification,
-      notifications: [],
+      notifyLockUpdate: jest.fn(),
+      notifyError: jest.fn(),
+      notifySuccess: jest.fn(),
+      notifyConflict: jest.fn(),
+      notifyConnectionStatus: jest.fn(),
       removeNotification: jest.fn(),
       clearNotifications: jest.fn(),
     })

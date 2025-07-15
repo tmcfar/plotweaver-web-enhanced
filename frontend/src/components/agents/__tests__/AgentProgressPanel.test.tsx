@@ -46,7 +46,13 @@ describe('AgentProgressPanel', () => {
     jest.clearAllMocks();
     
     mockUseAgentProgress.mockReturnValue({
-      progress: { percentage: 50, status: 'running', message: 'Test progress' }
+      progress: { 
+        jobId: 'test-job-1',
+        agentName: 'test-agent',
+        percentage: 50, 
+        currentStep: 'Test progress',
+        status: 'running'
+      }
     });
   });
 

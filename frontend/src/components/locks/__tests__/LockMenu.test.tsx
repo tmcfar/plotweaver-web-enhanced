@@ -12,7 +12,7 @@ describe('LockMenu', () => {
   const mockUnlockComponent = jest.fn();
 
   beforeEach(() => {
-    (useLockStore as jest.Mock).mockReturnValue({
+    (useLockStore as unknown as jest.Mock).mockReturnValue({
       lockComponent: mockLockComponent,
       unlockComponent: mockUnlockComponent
     });
@@ -28,9 +28,12 @@ describe('LockMenu', () => {
       <LockMenu
         componentId="test-1"
         currentLock={{
+          id: 'lock-1',
           componentId: 'test-1',
           componentType: 'test',
           level: 'soft',
+          type: 'personal',
+          reason: 'Test lock',
           lockedBy: 'user',
           lockedAt: new Date().toISOString()
         }}
@@ -55,9 +58,12 @@ describe('LockMenu', () => {
       <LockMenu
         componentId="test-1"
         currentLock={{
+          id: 'lock-1',
           componentId: 'test-1',
           componentType: 'test',
           level: 'soft',
+          type: 'personal',
+          reason: 'Test lock',
           lockedBy: 'user',
           lockedAt: new Date().toISOString()
         }}

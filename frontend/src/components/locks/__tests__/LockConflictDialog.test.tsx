@@ -30,7 +30,6 @@ describe('LockConflictDialog', () => {
       id: 'conflict-1',
       componentId: 'character-1',
       componentType: 'character',
-      componentName: 'John Doe',
       type: 'lock_override',
       description: 'This component is locked by Alice',
       currentState: { locked: true },
@@ -46,7 +45,6 @@ describe('LockConflictDialog', () => {
       id: 'conflict-2',
       componentId: 'scene-1',
       componentType: 'scene',
-      componentName: 'Opening Scene',
       type: 'concurrent_edit',
       description: 'This component has been edited by another user',
       currentState: { version: 1 },
@@ -317,7 +315,6 @@ describe('LockConflictDialog', () => {
         ...mockConflicts[0],
         id: `conflict-${i}`,
         componentId: `component-${i}`,
-        componentName: `Component ${i}`,
       }))
       
       render(<LockConflictDialog {...defaultProps} conflicts={manyConflicts} />)

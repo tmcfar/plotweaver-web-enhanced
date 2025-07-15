@@ -37,7 +37,7 @@ describe('HybridEditor', () => {
   };
 
   beforeEach(() => {
-    (useLockStore as jest.Mock).mockReturnValue({
+    (useLockStore as unknown as jest.Mock).mockReturnValue({
       locks: {}
     });
   });
@@ -51,7 +51,7 @@ describe('HybridEditor', () => {
   });
 
   it('respects lock level', async () => {
-    (useLockStore as jest.Mock).mockReturnValue({
+    (useLockStore as unknown as jest.Mock).mockReturnValue({
       locks: {
         'file-1': {
           id: 'file-1',
@@ -68,7 +68,7 @@ describe('HybridEditor', () => {
   });
 
   it('shows lock indicator when file is locked', async () => {
-    (useLockStore as jest.Mock).mockReturnValue({
+    (useLockStore as unknown as jest.Mock).mockReturnValue({
       locks: {
         'file-1': {
           id: 'file-1',

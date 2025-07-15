@@ -8,7 +8,7 @@ jest.mock('../../../lib/store', () => ({
 }));
 
 describe('Layout Component', () => {
-  const mockUseGlobalStore = useGlobalStore as jest.Mock;
+  const mockUseGlobalStore = useGlobalStore as unknown as jest.Mock;
 
   beforeEach(() => {
     mockUseGlobalStore.mockImplementation(() => ({
