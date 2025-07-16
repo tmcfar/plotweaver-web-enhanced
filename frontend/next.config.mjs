@@ -45,8 +45,8 @@ const nextConfig = {
       if (!dev) {
         config.plugins.push(
           new InjectManifest({
-            swSrc: join(__dirname, 'public', 'sw.js'),
-            swDest: join(__dirname, 'public', 'sw.js'),
+            swSrc: join(__dirname, 'src', 'service-worker.js'),
+            swDest: '../public/sw.js',
             exclude: [/\.map$/, /^manifest.*\.js$/, /_buildManifest\.js$/],
           })
         );

@@ -70,11 +70,7 @@ ENV SENTRY_AUTH_TOKEN=$SENTRY_AUTH_TOKEN
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Run build with proper error handling
-RUN npm run build && \
-    # Generate service worker manifest
-    npm run generate-sw && \
-    # Create standalone output
-    npm run build:standalone
+RUN npm run build
 
 # Development image for hot reloading
 FROM base AS development
