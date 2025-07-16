@@ -1,0 +1,20 @@
+# Minimal override - just get it working
+
+services:
+  frontend:
+    # Skip all volume mounts for now
+    volumes: []
+    
+    # Run in dev mode
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+
+  backend:
+    volumes:
+      - ./bff:/app/bff:cached
+      - backend-dev-data:/app/data
+
+volumes:
+  backend-dev-data:
+    driver: local
