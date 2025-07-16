@@ -48,19 +48,22 @@ def test_server() -> Generator[TestServer, None, None]:
 @pytest.fixture
 def mock_client():
     """Provide a mock client for testing."""
+
     class MockClient:
         def get(self, path):
             return MockResponse(200, {"success": True})
+
         def post(self, path, json=None):
             return MockResponse(200, {"success": True})
-    
+
     class MockResponse:
         def __init__(self, status_code, data):
             self.status_code = status_code
             self._data = data
+
         def json(self):
             return self._data
-    
+
     return MockClient()
 
 

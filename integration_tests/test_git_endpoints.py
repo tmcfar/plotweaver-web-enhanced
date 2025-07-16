@@ -28,7 +28,7 @@ class TestGitStatusEndpoint:
 
         # Test the mock behavior
         result = mock_git_manager.get_status.return_value
-        
+
         assert result["modified"] == ["file1.md"]
         assert result["staged"] == ["file2.md"]
         assert result["untracked"] == ["file3.md"]
@@ -44,7 +44,7 @@ class TestGitStatusEndpoint:
             "branch": "main",
             "is_clean": False,
         }
-        
+
         # Format response as would be done in endpoint
         response_data = {
             "success": True,
@@ -54,9 +54,9 @@ class TestGitStatusEndpoint:
                 "untracked_files": status_data.get("untracked", []),
                 "current_branch": status_data.get("branch"),
                 "is_clean": status_data.get("is_clean", True),
-            }
+            },
         }
-        
+
         assert response_data["success"] is True
         assert response_data["data"]["modified_files"] == ["file1.md"]
         assert response_data["data"]["staged_files"] == ["file2.md"]
@@ -77,7 +77,7 @@ class TestGitBranchesEndpoint:
 
         # Test the mock behavior
         result = mock_git_manager.get_branches.return_value
-        
+
         assert "main" in result["all"]
         assert "feature-branch" in result["all"]
         assert "develop" in result["all"]
@@ -91,7 +91,7 @@ class TestGitBranchesEndpoint:
             "current": "main",
             "remote": ["origin/main", "origin/develop"],
         }
-        
+
         # Format response as would be done in endpoint
         response_data = {
             "success": True,
@@ -99,11 +99,15 @@ class TestGitBranchesEndpoint:
                 "branches": branches_data.get("all", []),
                 "current_branch": branches_data.get("current"),
                 "remote_branches": branches_data.get("remote", []),
-            }
+            },
         }
-        
+
         assert response_data["success"] is True
-        assert response_data["data"]["branches"] == ["main", "feature-branch", "develop"]
+        assert response_data["data"]["branches"] == [
+            "main",
+            "feature-branch",
+            "develop",
+        ]
         assert response_data["data"]["current_branch"] == "main"
 
 
@@ -115,20 +119,16 @@ class TestLockConflictLogic:
         # Simulate lock checking logic
         existing_locks = {}
         requested_components = ["component1", "component2"]
-        
+
         conflicts = []
         for component in requested_components:
             if component in existing_locks:
-                conflicts.append({
-                    "component_id": component,
-                    "conflict_type": "already_locked"
-                })
-        
-        result = {
-            "conflicts": conflicts,
-            "can_proceed": len(conflicts) == 0
-        }
-        
+                conflicts.append(
+                    {"component_id": component, "conflict_type": "already_locked"}
+                )
+
+        result = {"conflicts": conflicts, "can_proceed": len(conflicts) == 0}
+
         assert result["conflicts"] == []
         assert result["can_proceed"] is True
 
@@ -137,20 +137,16 @@ class TestLockConflictLogic:
         # Simulate existing locks
         existing_locks = {"component1": {"locked_by": "user1"}}
         requested_components = ["component1", "component2"]
-        
+
         conflicts = []
         for component in requested_components:
             if component in existing_locks:
-                conflicts.append({
-                    "component_id": component,
-                    "conflict_type": "already_locked"
-                })
-        
-        result = {
-            "conflicts": conflicts,
-            "can_proceed": len(conflicts) == 0
-        }
-        
+                conflicts.append(
+                    {"component_id": component, "conflict_type": "already_locked"}
+                )
+
+        result = {"conflicts": conflicts, "can_proceed": len(conflicts) == 0}
+
         assert len(result["conflicts"]) == 1
         assert result["conflicts"][0]["component_id"] == "component1"
         assert result["can_proceed"] is False
@@ -163,23 +159,23 @@ class TestGitManagerMethods:
         """Test git status output parsing."""
         # Test parsing git status --porcelain output
         status_output = " M file1.md\nA  file2.md\n?? file3.md\n"
-        
+
         # Parse the output manually as we would in git manager
         modified = []
         staged = []
         untracked = []
-        
+
         # Split lines but don't strip the entire output first
-        for line in status_output.split('\n'):
+        for line in status_output.split("\n"):
             if not line:  # Skip empty lines
                 continue
-            if line.startswith(' M'):
+            if line.startswith(" M"):
                 modified.append(line[2:].strip())  # Remove first 2 chars and strip
-            elif line.startswith('A '):
-                staged.append(line[2:].strip())    # Remove first 2 chars and strip  
-            elif line.startswith('??'):
-                untracked.append(line[2:].strip()) # Remove first 2 chars and strip
-        
+            elif line.startswith("A "):
+                staged.append(line[2:].strip())  # Remove first 2 chars and strip
+            elif line.startswith("??"):
+                untracked.append(line[2:].strip())  # Remove first 2 chars and strip
+
         assert modified == ["file1.md"]
         assert staged == ["file2.md"]
         assert untracked == ["file3.md"]
@@ -188,18 +184,18 @@ class TestGitManagerMethods:
         """Test git branches output parsing."""
         # Test parsing git branch output
         branch_output = "  feature-branch\n* main\n  develop\n"
-        
+
         branches = []
         current = None
-        
-        for line in branch_output.strip().split('\n'):
-            if line.startswith('*'):
+
+        for line in branch_output.strip().split("\n"):
+            if line.startswith("*"):
                 current = line[2:].strip()
                 branches.append(current)
             elif line.strip():
                 branches.append(line.strip())
-        
+
         assert "main" in branches
-        assert "feature-branch" in branches  
+        assert "feature-branch" in branches
         assert "develop" in branches
         assert current == "main"
