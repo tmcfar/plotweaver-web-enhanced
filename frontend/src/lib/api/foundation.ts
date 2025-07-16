@@ -1,4 +1,4 @@
-import { ApiResponse } from '../../types/common';
+import { APIResponse } from '../../types/common';
 
 export interface FoundationStatus {
   isLocked: boolean;
@@ -24,7 +24,7 @@ export const fetchFoundationStatus = async (projectId: string): Promise<Foundati
   return response.json();
 };
 
-export const lockComponents = async (projectId: string, componentIds: string[]): Promise<ApiResponse<void>> => {
+export const lockComponents = async (projectId: string, componentIds: string[]): Promise<APIResponse<void>> => {
   const response = await fetch(`/api/foundation/${projectId}/lock`, {
     method: 'POST',
     headers: {

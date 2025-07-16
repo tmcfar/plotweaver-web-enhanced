@@ -66,7 +66,7 @@ interface LockTreeViewProps {
   userRole: 'owner' | 'editor' | 'collaborator';
   level?: number;
   searchTerm?: string;
-  levelFilter?: LockLevel | 'all';
+  levelFilter?: LockLevel | 'all' | 'unlocked';
 }
 
 const LockTreeView: FC<LockTreeViewProps> = ({

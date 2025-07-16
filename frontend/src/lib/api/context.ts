@@ -1,4 +1,4 @@
-import { ApiResponse } from '../../types/common';
+import { APIResponse } from '../../types/common';
 
 export interface ContextComponent {
   id: string;
@@ -84,7 +84,7 @@ export const suggestComponents = async (
 export const buildContext = async (
   projectId: string,
   componentIds: string[]
-): Promise<ApiResponse<{ contextId: string; components: ContextComponent[] }>> => {
+): Promise<APIResponse<{ contextId: string; components: ContextComponent[] }>> => {
   const response = await fetch(`/api/context/${projectId}/build`, {
     method: 'POST',
     headers: {
@@ -104,7 +104,7 @@ export const saveContextPreset = async (
   projectId: string,
   name: string,
   componentIds: string[]
-): Promise<ApiResponse<{ presetId: string }>> => {
+): Promise<APIResponse<{ presetId: string }>> => {
   const response = await fetch(`/api/context/${projectId}/presets`, {
     method: 'POST',
     headers: {

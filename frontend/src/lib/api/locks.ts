@@ -223,6 +223,23 @@ class LockAPIService {
     // Implementation for unlocking component
     return Promise.resolve();
   }
+
+  async bulkLock(params: {
+    componentType: string;
+    level: LockLevel;
+    reason: string;
+  }): Promise<void> {
+    // Implementation for bulk locking by component type
+    try {
+      await this.request('/locks/bulk-by-type', {
+        method: 'POST',
+        body: JSON.stringify(params),
+      });
+    } catch (error) {
+      console.error('Failed to bulk lock components:', error);
+      throw error;
+    }
+  }
 }
 
 export const lockAPI = new LockAPIService();

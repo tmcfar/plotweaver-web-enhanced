@@ -45,25 +45,6 @@ export const useWebSocketLocks = (projectId: string) => {
   const reconnectCountRef = useRef(0);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Handle connection status changes
-  useEffect(() => {
-    setWebsocketStatus(connectionStatus);
-
-    if (connectionStatus === 'connected') {
-      reconnectCountRef.current = 0;
-      // Request full sync after reconnection
-      requestFullSync();
-    } else if (connectionStatus === 'reconnecting') {
-      reconnectCountRef.current++;
-      if (reconnectCountRef.current > 3) {
-        addError({
-          message: 'Multiple reconnection attempts failed',
-          type: 'network',
-        });
-      }
-    }
-  }, [connectionStatus, setWebsocketStatus, addError]);
-
   // Request full synchronization with server
   const requestFullSync = useCallback(() => {
     if (connectionStatus === 'connected') {
@@ -85,6 +66,25 @@ export const useWebSocketLocks = (projectId: string) => {
       }, 10000);
     }
   }, [connectionStatus, projectId, send, optimisticOperations.length, addError]);
+
+  // Handle connection status changes
+  useEffect(() => {
+    setWebsocketStatus(connectionStatus);
+
+    if (connectionStatus === 'connected') {
+      reconnectCountRef.current = 0;
+      // Request full sync after reconnection
+      requestFullSync();
+    } else if (connectionStatus === 'reconnecting') {
+      reconnectCountRef.current++;
+      if (reconnectCountRef.current > 3) {
+        addError({
+          message: 'Multiple reconnection attempts failed',
+          type: 'network',
+        });
+      }
+    }
+  }, [connectionStatus, setWebsocketStatus, addError, requestFullSync]);
 
   // Handle lock updates from other clients
   const handleLockUpdate = useCallback((message: WebSocketLockMessage) => {

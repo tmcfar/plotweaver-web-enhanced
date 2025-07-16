@@ -74,10 +74,10 @@ export function PerformancePanel({ isOpen, onClose }: PerformancePanelProps) {
                 <div className="flex flex-wrap gap-2">
                   {summary.components.map((component) => (
                     <span
-                      key={component}
+                      key={String(component)}
                       className="px-2 py-1 bg-gray-100 rounded text-sm"
                     >
-                      {component}
+                      {String(component)}
                     </span>
                   ))}
                 </div>

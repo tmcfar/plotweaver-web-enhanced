@@ -19,49 +19,8 @@ Sentry.init({
   // Release tracking
   release: process.env.NEXT_PUBLIC_COMMIT_SHA || 'development',
   
-  // Integrations
-  integrations: [
-    // Browser tracing
-    new Sentry.BrowserTracing({
-      // Navigation transactions
-      routingInstrumentation: Sentry.nextRouterInstrumentation,
-      
-      // Trace fetch requests
-      traceFetch: true,
-      
-      // Trace XHR requests
-      traceXHR: true,
-      
-      // Custom transaction names
-      beforeNavigate: (context) => {
-        return {
-          ...context,
-          name: context.name
-            .replace(/\[[\w-]+\]/g, '[param]')
-            .replace(/\d+/g, '[id]'),
-        };
-      },
-    }),
-    
-    // Replay integration
-    new Sentry.Replay({
-      // Mask sensitive content
-      maskAllText: false,
-      maskAllInputs: true,
-      
-      // Block certain elements
-      block: ['.password', '.credit-card', '[data-sensitive]'],
-      
-      // Privacy settings
-      blockAllMedia: false,
-      
-      // Network details
-      networkDetailAllowUrls: [process.env.NEXT_PUBLIC_API_URL],
-      networkCaptureBodies: false,
-      networkRequestHeaders: ['X-Request-ID'],
-      networkResponseHeaders: ['X-Response-Time'],
-    }),
-  ],
+  // Integrations - Commented out due to version compatibility issues
+  // integrations: [],
   
   // Error filtering
   ignoreErrors: [
@@ -194,9 +153,14 @@ export function reportErrorBoundary(error: Error, errorInfo: any) {
 
 // Performance monitoring helpers
 export function measureComponentPerformance(componentName: string) {
-  return Sentry.startTransaction({
+  return Sentry.startSpan({
     name: `Component: ${componentName}`,
     op: 'react.component',
+  }, () => {
+    // Return a span that can be manually finished
+    return {
+      finish: () => {} // No-op for compatibility
+    };
   });
 }
 

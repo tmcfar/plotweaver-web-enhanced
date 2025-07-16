@@ -3,25 +3,7 @@ import { LockIndicator, LockLevel, LockType } from './LockIndicator';
 import { useLockStore, useLockStoreSelectors } from '../../lib/store/lockStore';
 import { useOptimisticLocks } from '../../hooks/useOptimisticLocks';
 import { useNotifications } from '../notifications/NotificationSystem';
-
-export interface ComponentLock {
-  id: string;
-  componentId: string;
-  level: LockLevel;
-  type: LockType;
-  reason: string;
-  lockedBy: string;
-  lockedAt: Date;
-  sharedWith?: string[];
-  canOverride?: boolean;
-}
-
-export interface BulkLockOperation {
-  type: 'lock' | 'unlock' | 'change_level';
-  componentIds: string[];
-  lockLevel?: LockLevel;
-  reason: string;
-}
+import { ComponentLock, BulkLockOperation } from '../../lib/api/locks';
 
 interface ProjectComponent {
   id: string;
@@ -114,11 +96,17 @@ const TreeNode: FC<{
         <span className="flex-1 text-sm">{component.name}</span>
         
         <LockIndicator
-          lock={currentLock}
+          componentId={component.id}
+          lockLevel={currentLock?.level || null}
+          lockType={currentLock?.type}
+          canOverride={currentLock?.canOverride}
+          sharedWith={currentLock?.sharedWith}
+          reason={currentLock?.reason}
+          lockedBy={currentLock?.lockedBy}
+          lockedAt={currentLock?.lockedAt ? new Date(currentLock.lockedAt) : undefined}
+          onLockToggle={() => onLockToggle(component.id)}
+          size="sm"
           isLoading={isLoading}
-          onClick={() => onLockToggle(component.id)}
-          canToggle={userRole === 'owner' || userRole === 'editor'}
-          size="small"
         />
       </div>
       

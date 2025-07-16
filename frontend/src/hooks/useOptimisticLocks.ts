@@ -42,7 +42,7 @@ export const useOptimisticLocks = (projectId: string): OptimisticLockHook => {
   };
 
   // Set operation timeout for automatic rollback
-  const setOperationTimeout = (operationId: string, timeoutMs: number = 10000) => {
+  const setOperationTimeout = useCallback((operationId: string, timeoutMs: number = 10000) => {
     const timeout = setTimeout(() => {
       addError({
         message: 'Operation timed out',
@@ -54,7 +54,7 @@ export const useOptimisticLocks = (projectId: string): OptimisticLockHook => {
     }, timeoutMs);
     
     operationTimeouts.current.set(operationId, timeout);
-  };
+  }, [addError, rollbackOptimisticOperation]);
 
   const updateLock = useCallback(
     async (componentId: string, lock: ComponentLock) => {
@@ -108,8 +108,8 @@ export const useOptimisticLocks = (projectId: string): OptimisticLockHook => {
       rollbackOptimisticOperation,
       setLoading,
       addError,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    ] // setOperationTimeout is a stable function defined in component scope
+      setOperationTimeout,
+    ]
   );
 
   const removeLock = useCallback(
@@ -172,6 +172,7 @@ export const useOptimisticLocks = (projectId: string): OptimisticLockHook => {
       rollbackOptimisticOperation,
       setLoading,
       addError,
+      setOperationTimeout,
     ]
   );
 
@@ -240,6 +241,7 @@ export const useOptimisticLocks = (projectId: string): OptimisticLockHook => {
       rollbackOptimisticOperation,
       setLoading,
       addError,
+      setOperationTimeout,
     ]
   );
 

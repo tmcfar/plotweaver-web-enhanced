@@ -19,7 +19,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       {config.panels.left.visible && (
         <PanelContainer
           side="left"
-          defaultSize={config.panels.left.defaultSize || 250}
+          defaultSize={config.panels.left.defaultWidth || 250}
           minSize={config.panels.left.minSize || 200}
           maxSize={config.panels.left.maxSize || 400}
           config={config.panels.left}
@@ -34,7 +34,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
         {config.panels.bottom.visible && (
           <PanelContainer
             side="bottom"
-            defaultSize={config.panels.bottom.defaultSize || 200}
+            defaultSize={config.panels.bottom.defaultHeight || 200}
             minSize={config.panels.bottom.minSize || 150}
             maxSize={config.panels.bottom.maxSize || 400}
             config={config.panels.bottom}
@@ -48,7 +48,7 @@ export const Layout: FC<LayoutProps> = ({ children }) => {
       {config.panels.right.visible && (
         <PanelContainer
           side="right"
-          defaultSize={config.panels.right.defaultSize || 300}
+          defaultSize={config.panels.right.defaultWidth || 300}
           minSize={config.panels.right.minSize || 250}
           maxSize={config.panels.right.maxSize || 500}
           config={config.panels.right}

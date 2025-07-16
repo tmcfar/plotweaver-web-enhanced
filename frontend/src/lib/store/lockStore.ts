@@ -48,6 +48,8 @@ export interface LockActions {
   updateLock: (componentId: string, lock: ComponentLock) => void;
   removeLock: (componentId: string) => void;
   bulkUpdateLocks: (operations: BulkLockOperation[]) => void;
+  lockComponent: (componentId: string, level: string, reason: string) => Promise<void>;
+  unlockComponent: (componentId: string) => Promise<void>;
   
   // Optimistic operations
   addOptimisticOperation: (operation: OptimisticOperation) => void;
@@ -163,6 +165,43 @@ export const useLockStore = create<LockState & LockActions>()(
           });
           
           set({ locks: newLocks, cacheTimestamp: new Date() }, false, 'bulkUpdateLocks');
+        },
+
+        lockComponent: async (componentId, level, reason) => {
+          const lock: ComponentLock = {
+            id: `lock-${Date.now()}-${componentId}`,
+            componentId,
+            componentType: 'component',
+            level: level as any,
+            type: 'personal',
+            reason,
+            lockedBy: 'current-user',
+            lockedAt: new Date().toISOString(),
+            canOverride: true,
+          };
+          
+          set(
+            (state) => ({
+              locks: { ...state.locks, [componentId]: lock },
+              cacheTimestamp: new Date(),
+            }),
+            false,
+            'lockComponent'
+          );
+        },
+
+        unlockComponent: async (componentId) => {
+          set(
+            (state) => {
+              const { [componentId]: removed, ...remaining } = state.locks;
+              return {
+                locks: remaining,
+                cacheTimestamp: new Date(),
+              };
+            },
+            false,
+            'unlockComponent'
+          );
         },
 
         // Optimistic operations

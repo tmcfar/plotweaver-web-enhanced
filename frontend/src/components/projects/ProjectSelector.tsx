@@ -14,11 +14,6 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ className = ''
   const [loading, setLoading] = useState(true);
   const { setCurrentProject } = useGlobalStore();
 
-  useEffect(() => {
-    loadProjects();
-    loadActiveProject();
-  }, []);
-
   const loadProjects = async () => {
     try {
       const response = await api.listProjects();
@@ -50,60 +45,66 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ className = ''
     }
   };
 
-  const loadActiveProject = async () => {
-    try {
-      setLoading(true);
-      const response = await api.getActiveProject();
-      if (response.active_project) {
-        setActiveProject(response.active_project);
-        // Convert API project to store project format
-        setCurrentProject({
-          id: response.active_project.id.toString(),
-          name: response.active_project.name,
-          description: response.active_project.description || '',
-          createdAt: new Date(response.active_project.created_at),
-          updatedAt: new Date(response.active_project.updated_at),
-          owner: 'current_user', // TODO: Get from auth
-          collaborators: []
-        });
+  useEffect(() => {
+    loadProjects();
+    
+    const loadActiveProject = async () => {
+      try {
+        setLoading(true);
+        const response = await api.getActiveProject();
+        if (response.active_project) {
+          setActiveProject(response.active_project);
+          // Convert API project to store project format
+          setCurrentProject({
+            id: response.active_project.id.toString(),
+            name: response.active_project.name,
+            description: response.active_project.description || '',
+            createdAt: new Date(response.active_project.created_at),
+            updatedAt: new Date(response.active_project.updated_at),
+            owner: 'current_user', // TODO: Get from auth
+            collaborators: []
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load active project:', error);
+        // Development mock data
+        if (process.env.NODE_ENV === 'development') {
+          const mockProject: ApiProject = {
+            id: 1,
+            name: 'Demo Project',
+            description: 'Development mock project',
+            git_repo_url: '',
+            git_initialized: false,
+            mode_set: 'default',
+            statistics: {
+              total_words: 1250,
+              total_scenes: 5,
+              total_chapters: 1,
+              total_cost: 0,
+              total_savings: 0
+            },
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            last_accessed: new Date().toISOString()
+          };
+          setActiveProject(mockProject);
+          setCurrentProject({
+            id: mockProject.id.toString(),
+            name: mockProject.name,
+            description: mockProject.description || '',
+            createdAt: new Date(mockProject.created_at),
+            updatedAt: new Date(mockProject.updated_at),
+            owner: 'demo_user',
+            collaborators: []
+          });
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to load active project:', error);
-      // Development mock data
-      if (process.env.NODE_ENV === 'development') {
-        const mockProject: ApiProject = {
-          id: 1,
-          name: 'Demo Project',
-          description: 'Development mock project',
-          git_repo_url: '',
-          git_initialized: false,
-          mode_set: 'default',
-          statistics: {
-            total_words: 1250,
-            total_scenes: 5,
-            total_chapters: 1,
-            total_cost: 0,
-            total_savings: 0
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          last_accessed: new Date().toISOString()
-        };
-        setActiveProject(mockProject);
-        setCurrentProject({
-          id: mockProject.id.toString(),
-          name: mockProject.name,
-          description: mockProject.description || '',
-          createdAt: new Date(mockProject.created_at),
-          updatedAt: new Date(mockProject.updated_at),
-          owner: 'demo_user',
-          collaborators: []
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    
+    loadActiveProject();
+  }, [setCurrentProject]);
 
   const handleProjectSelect = async (project: ApiProject) => {
     try {

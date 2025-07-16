@@ -1,6 +1,11 @@
 import { AgentProgress } from '../store/agentProgressStore';
-import { LockConflict, Resolution, lockService } from './locks';
+import { LockConflict, ConflictResolution as BaseConflictResolution, lockService } from './locks';
 import { LOCK_CONFLICT_DIALOG_CONFIG } from '../constants/dialogConfig';
+
+export interface AgentConflictResolution extends BaseConflictResolution {
+  cancelled?: boolean;
+  modifiedPayload?: Record<string, unknown>;
+}
 
 export interface AgentResult {
   cancelled?: boolean;
@@ -92,12 +97,12 @@ export class AgentClient {
     return components;
   }
 
-  private async resolveLockConflicts(conflicts: LockConflict[]): Promise<Resolution> {
+  private async resolveLockConflicts(conflicts: LockConflict[]): Promise<AgentConflictResolution> {
     return new Promise((resolve) => {
       LOCK_CONFLICT_DIALOG_CONFIG.showDialog({
         conflicts,
-        onResolve: (resolution: Resolution) => resolve(resolution),
-        onCancel: () => resolve({ cancelled: true })
+        onResolve: (resolution: AgentConflictResolution) => resolve(resolution),
+        onCancel: () => resolve({ type: 'skip', reason: 'User cancelled', cancelled: true })
       });
     });
   }

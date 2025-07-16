@@ -22,7 +22,10 @@ import type {
 import { worldbuildingApi } from './worldbuildingApi';
 import { bffApi } from './bffApi';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// Use the BFF URL from environment variables
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+console.log('API Base URL:', API_BASE_URL); // Debug logging
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -31,19 +34,35 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // Enable session cookies
-  timeout: 10000, // 10 second timeout
+  timeout: 30000, // 30 second timeout (increased from 10s)
 });
 
-// Add request interceptor for auth token
+// Add request interceptor for auth token and debugging
 apiClient.interceptors.request.use(
   (config) => {
+    console.log('Making request to:', config.baseURL + config.url); // Debug logging
     const token = localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error('Request error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for debugging
+apiClient.interceptors.response.use(
+  (response) => {
+    console.log('Response received:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('Response error:', error.response?.status, error.config?.url, error.message);
+    return Promise.reject(error);
+  }
 );
 
 // Types

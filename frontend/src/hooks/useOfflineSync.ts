@@ -30,6 +30,87 @@ export function useOfflineSync() {
   const [conflicts, setConflicts] = useState<OfflineChange[]>([]);
   const { sendMessage } = useWebSocket();
 
+
+  const handleConflict = (localChange: OfflineChange, remoteData: any) => {
+    const conflictChange = {
+      ...localChange,
+      syncStatus: 'conflict' as const,
+      remoteData,
+    };
+    
+    setConflicts(prev => [...prev, conflictChange]);
+    toast.error('Sync conflict detected', {
+      action: {
+        label: 'Resolve',
+        onClick: () => {
+          // Will be handled by ConflictResolver component
+        },
+      },
+    });
+  };
+
+  // Define syncChange before using it
+  const syncChange = useCallback(async (change: OfflineChange) => {
+    try {
+      const response = await fetch(`/api/sync/${change.entity}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          change,
+          clientTimestamp: change.timestamp,
+        }),
+      });
+
+      if (response.status === 409) {
+        // Conflict detected
+        const conflictData = await response.json();
+        handleConflict(change, conflictData);
+        return;
+      }
+
+      if (!response.ok) {
+        throw new Error(`Sync failed: ${response.statusText}`);
+      }
+
+      // Mark as synced
+      await offlineStore.removeItem(change.id);
+      setPendingChanges(prev => prev.filter(c => c.id !== change.id));
+      
+    } catch (error) {
+      console.error('Failed to sync change:', error);
+      // Will retry on next sync attempt
+    }
+  }, []);
+
+  const syncPendingChanges = useCallback(async () => {
+    if (!isOnline || isSyncing || pendingChanges.length === 0) {
+      return;
+    }
+
+    setIsSyncing(true);
+    const total = pendingChanges.length;
+    let synced = 0;
+
+    try {
+      for (const change of pendingChanges) {
+        await syncChange(change);
+        synced++;
+        
+        // Update progress
+        if (synced % 5 === 0) {
+          toast.info(`Syncing... ${synced}/${total} changes`);
+        }
+      }
+
+      if (synced > 0) {
+        toast.success(`Successfully synced ${synced} changes`);
+      }
+    } finally {
+      setIsSyncing(false);
+      await loadPendingChanges(); // Reload to get current state
+    }
+  }, [isOnline, isSyncing, pendingChanges, syncChange]);
+
   // Monitor online/offline status
   useEffect(() => {
     const handleOnline = () => {
@@ -50,7 +131,7 @@ export function useOfflineSync() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [syncPendingChanges]);
 
   // Load pending changes on mount
   useEffect(() => {
@@ -96,87 +177,8 @@ export function useOfflineSync() {
       console.error('Failed to queue offline change:', error);
       toast.error('Failed to save offline change');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOnline]); // syncChange is defined below and would cause circular dependency
+  }, [isOnline, syncChange]); // Fixed dependency array
 
-  const syncChange = async (change: OfflineChange) => {
-    try {
-      const response = await fetch(`/api/sync/${change.entity}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          change,
-          clientTimestamp: change.timestamp,
-        }),
-      });
-
-      if (response.status === 409) {
-        // Conflict detected
-        const conflictData = await response.json();
-        handleConflict(change, conflictData);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Sync failed: ${response.statusText}`);
-      }
-
-      // Mark as synced
-      await offlineStore.removeItem(change.id);
-      setPendingChanges(prev => prev.filter(c => c.id !== change.id));
-      
-    } catch (error) {
-      console.error('Failed to sync change:', error);
-      // Will retry on next sync attempt
-    }
-  };
-
-  const syncPendingChanges = useCallback(async () => {
-    if (!isOnline || isSyncing || pendingChanges.length === 0) {
-      return;
-    }
-
-    setIsSyncing(true);
-    const total = pendingChanges.length;
-    let synced = 0;
-
-    try {
-      for (const change of pendingChanges) {
-        await syncChange(change);
-        synced++;
-        
-        // Update progress
-        if (synced % 5 === 0) {
-          toast.info(`Syncing... ${synced}/${total} changes`);
-        }
-      }
-
-      if (synced > 0) {
-        toast.success(`Successfully synced ${synced} changes`);
-      }
-    } finally {
-      setIsSyncing(false);
-      await loadPendingChanges(); // Reload to get current state
-    }
-  }, [isOnline, isSyncing, pendingChanges]);
-
-  const handleConflict = (localChange: OfflineChange, remoteData: any) => {
-    const conflictChange = {
-      ...localChange,
-      syncStatus: 'conflict' as const,
-      remoteData,
-    };
-    
-    setConflicts(prev => [...prev, conflictChange]);
-    toast.error('Sync conflict detected', {
-      action: {
-        label: 'Resolve',
-        onClick: () => {
-          // Will be handled by ConflictResolver component
-        },
-      },
-    });
-  };
 
   const resolveConflict = async (
     changeId: string, 
@@ -230,7 +232,7 @@ export function useOfflineSync() {
     if (isOnline && !isSyncing) {
       syncPendingChanges();
     }
-  }, [isOnline, syncPendingChanges]);
+  }, [isOnline, syncPendingChanges, isSyncing]);
 
   return {
     isOnline,

@@ -1,4 +1,4 @@
-import { ApiResponse } from '../../types/common';
+import { APIResponse } from '../../types/common';
 
 export interface QueueItem {
   id: string;
@@ -37,7 +37,7 @@ export const updateQueuePriority = async (
   projectId: string,
   itemId: string,
   priority: QueueItem['priority']
-): Promise<ApiResponse<void>> => {
+): Promise<APIResponse<void>> => {
   const response = await fetch(`/api/queue/${projectId}/items/${itemId}/priority`, {
     method: 'PATCH',
     headers: {
@@ -53,7 +53,7 @@ export const updateQueuePriority = async (
   return response.json();
 };
 
-export const pauseQueueItem = async (projectId: string, itemId: string): Promise<ApiResponse<void>> => {
+export const pauseQueueItem = async (projectId: string, itemId: string): Promise<APIResponse<void>> => {
   const response = await fetch(`/api/queue/${projectId}/items/${itemId}/pause`, {
     method: 'POST',
   });
@@ -65,7 +65,7 @@ export const pauseQueueItem = async (projectId: string, itemId: string): Promise
   return response.json();
 };
 
-export const resumeQueueItem = async (projectId: string, itemId: string): Promise<ApiResponse<void>> => {
+export const resumeQueueItem = async (projectId: string, itemId: string): Promise<APIResponse<void>> => {
   const response = await fetch(`/api/queue/${projectId}/items/${itemId}/resume`, {
     method: 'POST',
   });
@@ -77,7 +77,7 @@ export const resumeQueueItem = async (projectId: string, itemId: string): Promis
   return response.json();
 };
 
-export const reorderQueue = async (projectId: string, itemIds: string[]): Promise<ApiResponse<void>> => {
+export const reorderQueue = async (projectId: string, itemIds: string[]): Promise<APIResponse<void>> => {
   const response = await fetch(`/api/queue/${projectId}/reorder`, {
     method: 'POST',
     headers: {

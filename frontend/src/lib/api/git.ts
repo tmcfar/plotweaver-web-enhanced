@@ -23,7 +23,7 @@ class GitApiClient {
     this.cache = gitCache;
   }
 
-  private getAuthToken(): string | null {
+  protected getAuthToken(): string | null {
     // Follow existing auth pattern: localStorage -> sessionStorage -> cookies
     let token = localStorage.getItem('auth_token');
     
@@ -43,7 +43,7 @@ class GitApiClient {
     return token;
   }
 
-  private getSessionId(): string | null {
+  protected getSessionId(): string | null {
     // Include session ID following existing pattern
     return sessionStorage.getItem('plotweaver_session_id') || localStorage.getItem('plotweaver_session_id');
   }

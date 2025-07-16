@@ -23,33 +23,33 @@ export function SetupWizard({ projectPath, onComplete }: SetupWizardProps) {
 
   // Check for existing setup progress
   useEffect(() => {
+    const checkExistingProgress = async () => {
+      try {
+        const data = await worldbuildingApi.getSetupProgress(projectPath);
+        if (data.analysis) {
+          setSetupPlan(data.analysis.setup_plan);
+          setAssumptions(data.assumptions || data.analysis.setup_plan.assumptions);
+          if (data.progress && data.progress.completed_steps > 0) {
+            // Resume from where we left off
+            setCurrentStep(2); // Skip to setup steps
+            const completed = new Set<string>();
+            Object.entries(data.progress.steps).forEach(([stepId, stepData]: [string, any]) => {
+              if (stepData.completed) {
+                completed.add(stepId);
+              }
+            });
+            setCompletedSteps(completed);
+          } else {
+            setCurrentStep(1); // Show assumptions
+          }
+        }
+      } catch (err) {
+        console.error('Failed to check existing progress:', err);
+      }
+    };
+    
     checkExistingProgress();
   }, [projectPath]);
-
-  const checkExistingProgress = async () => {
-    try {
-      const data = await worldbuildingApi.getSetupProgress(projectPath);
-      if (data.analysis) {
-        setSetupPlan(data.analysis.setup_plan);
-        setAssumptions(data.assumptions || data.analysis.setup_plan.assumptions);
-        if (data.progress && data.progress.completed_steps > 0) {
-          // Resume from where we left off
-          setCurrentStep(2); // Skip to setup steps
-          const completed = new Set<string>();
-          Object.entries(data.progress.steps).forEach(([stepId, stepData]: [string, any]) => {
-            if (stepData.completed) {
-              completed.add(stepId);
-            }
-          });
-          setCompletedSteps(completed);
-        } else {
-          setCurrentStep(1); // Show assumptions
-        }
-      }
-    } catch (err) {
-      console.error('Failed to check existing progress:', err);
-    }
-  };
 
   const handleConceptAnalysis = (analysis: any) => {
     setSetupPlan(analysis.setup_plan);

@@ -26,7 +26,13 @@ export const useEnhancedWebSocket = (projectId: string): WebSocketHook => {
         
         // Send queued messages
         messageQueue.current.forEach(({channel, data}) => {
-          send(channel, data);
+          if (ws.current?.readyState === WebSocket.OPEN) {
+            try {
+              ws.current.send(JSON.stringify({ channel, data }));
+            } catch (error) {
+              ws.current.send(typeof data === 'string' ? data : JSON.stringify(data));
+            }
+          }
         });
         messageQueue.current = [];
       };

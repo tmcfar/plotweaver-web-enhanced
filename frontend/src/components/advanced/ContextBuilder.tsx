@@ -83,20 +83,6 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
     });
   }, [availableComponents, searchTerm, selectedType, context]);
 
-  // Validate context when it changes
-  useEffect(() => {
-    if (context.length > 0) {
-      validateContext();
-    } else {
-      setValidation(null);
-    }
-  }, [context, validateContext]);
-
-  // Generate AI suggestions based on current context
-  useEffect(() => {
-    generateSuggestions();
-  }, [context, sceneId, generateSuggestions]);
-
   const validateContext = useCallback(async () => {
     setIsValidating(true);
     try {
@@ -127,6 +113,20 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
       console.error('Failed to generate suggestions:', error);
     }
   }, [context, availableComponents]);
+
+  // Validate context when it changes
+  useEffect(() => {
+    if (context.length > 0) {
+      validateContext();
+    } else {
+      setValidation(null);
+    }
+  }, [context, validateContext]);
+
+  // Generate AI suggestions based on current context
+  useEffect(() => {
+    generateSuggestions();
+  }, [context, sceneId, generateSuggestions]);
 
   const addToContext = useCallback((component: ProjectComponent, reason: string = 'Manual addition') => {
     const newItem: ContextItem = {
@@ -351,20 +351,20 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
             </div>
           ) : (
             <DragDropContext onDragEnd={handleDragEnd}>
-              {/* @ts-ignore - DnD types issue with React 18 */}
               <Droppable droppableId="context">
-                {(provided: any) => (
-                  <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                    {context.map((item, index) => (
-                      /* @ts-ignore - DnD types issue with React 18 */
-                      <Draggable key={item.id} draggableId={item.id} index={index}>
-                        {(provided: any, snapshot: any) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            className={`p-4 border rounded-lg bg-white transition-shadow ${snapshot.isDragging ? 'shadow-lg' : 'shadow-sm'
-                              }`}
-                          >
+                {(provided, snapshot) => {
+                  return (
+                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                      {context.map((item, index) => (
+                        <Draggable key={item.id} draggableId={item.id} index={index}>
+                          {(provided, snapshot) => {
+                            return (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className={`p-4 border rounded-lg bg-white transition-shadow ${snapshot.isDragging ? 'shadow-lg' : 'shadow-sm'
+                                }`}
+                              >
                             <div className="flex items-start justify-between">
                               <div className="flex items-start space-x-3 flex-1">
                                 <div
@@ -412,13 +412,15 @@ export const ContextBuilder: React.FC<ContextBuilderProps> = ({
                                 <X className="w-4 h-4" />
                               </button>
                             </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder as React.ReactNode}
-                  </div>
-                )}
+                              </div>
+                            );
+                          }}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder as React.ReactNode}
+                    </div>
+                  );
+                }}
               </Droppable>
             </DragDropContext>
           )}

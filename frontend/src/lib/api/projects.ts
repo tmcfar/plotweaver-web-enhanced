@@ -16,12 +16,9 @@ const convertApiProjectToFrontend = (apiProject: any): Project => {
     genre: 'fiction', // Default genre, update based on settings
     targetWordCount: 80000, // Default target
     wordCount: apiProject.statistics?.total_words || 0,
-    chapterCount: apiProject.statistics?.total_chapters || 0,
-    sceneCount: apiProject.statistics?.total_scenes || 0,
-    completedScenes: 0, // TODO: Track this in backend
+    // Chapter and scene tracking removed as not part of Project interface
     status: 'draft' as const,
     writingMode: apiProject.mode_set || 'discovery',
-    visibility: 'private' as const,
     tags: [],
     createdAt: apiProject.created_at,
     updatedAt: apiProject.updated_at,
@@ -89,10 +86,14 @@ class ProjectAPI {
         name: 'Fantasy Novel',
         description: 'Epic fantasy adventure template',
         genre: 'fantasy',
-        targetWordCount: 100000,
+        estimatedLength: 100000,
+        difficulty: 'intermediate' as const,
+        icon: '🏰',
         structure: {
           chapters: 30,
-          scenesPerChapter: 4
+          scenesPerChapter: 4,
+          charactersCount: 8,
+          locationsCount: 5
         },
         settings: {}
       },
@@ -101,10 +102,14 @@ class ProjectAPI {
         name: 'Mystery Novel',
         description: 'Classic whodunit mystery',
         genre: 'mystery',
-        targetWordCount: 80000,
+        estimatedLength: 80000,
+        difficulty: 'beginner' as const,
+        icon: '🕵️',
         structure: {
           chapters: 24,
-          scenesPerChapter: 3
+          scenesPerChapter: 3,
+          charactersCount: 6,
+          locationsCount: 4
         },
         settings: {}
       }

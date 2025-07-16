@@ -42,7 +42,28 @@ export function useProjectTree(projectId: string, path: string = '') {
   const [error, setError] = useState<string | null>(null);
   const gitApi = useGitApi();
 
-  const fetchTree = async () => {
+  useEffect(() => {
+    const fetchTree = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await gitApi.getProjectTree(projectId, path);
+        setTree(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch tree');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (projectId) {
+      fetchTree();
+    }
+  }, [projectId, path, gitApi]);
+
+  // Create a stable refetch function
+  const refetch = async () => {
+    if (!projectId) return;
     try {
       setLoading(true);
       setError(null);
@@ -55,13 +76,7 @@ export function useProjectTree(projectId: string, path: string = '') {
     }
   };
 
-  useEffect(() => {
-    if (projectId) {
-      fetchTree();
-    }
-  }, [projectId, path, gitApi]);
-
-  return { tree, loading, error, refetch: fetchTree };
+  return { tree, loading, error, refetch };
 }
 
 export function useFileHistory(projectId: string, filePath: string, options: { limit?: number; skip?: number } = {}) {
@@ -69,13 +84,16 @@ export function useFileHistory(projectId: string, filePath: string, options: { l
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const gitApi = useGitApi();
+  
+  // Destructure options to create stable dependencies
+  const { limit, skip } = options;
 
   useEffect(() => {
     async function fetchHistory() {
       try {
         setLoading(true);
         setError(null);
-        const data = await gitApi.getFileHistory(projectId, filePath, options);
+        const data = await gitApi.getFileHistory(projectId, filePath, { limit, skip });
         setHistory(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch history');
@@ -87,7 +105,7 @@ export function useFileHistory(projectId: string, filePath: string, options: { l
     if (projectId && filePath) {
       fetchHistory();
     }
-  }, [projectId, filePath, options.limit, options.skip, gitApi]);
+  }, [projectId, filePath, limit, skip, gitApi]);
 
   return { history, loading, error };
 }
